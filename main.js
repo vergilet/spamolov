@@ -24,11 +24,11 @@ function updateConnectionStatus(state, message) {
         if (secondsSince > 20) {
           elements.statusLight.classList.remove('bg-green-500');
           elements.statusLight.classList.add('bg-yellow-500');
-          elements.statusEl.textContent = `Connection stale (last message ${secondsSince}s ago)`;
+          elements.statusEl.textContent = `З'єднання активне (останнє повідомлення ${secondsSince} сек тому)`;
         } else {
           elements.statusLight.classList.remove('bg-yellow-500');
           elements.statusLight.classList.add('bg-green-500');
-          elements.statusEl.textContent = `Connected to #${elements.channelInput.value.trim().toLowerCase()} (last message ${secondsSince}s ago)`;
+          elements.statusEl.textContent = `Під'єднано до #${elements.channelInput.value.trim().toLowerCase()} (останнє повідомлення ${secondsSince} сек тому)`;
         }
       }, 1000);
       break;
@@ -39,7 +39,7 @@ function updateConnectionStatus(state, message) {
     case 'disconnected':
     default:
       elements.statusLight.classList.add('bg-gray-500');
-      elements.statusEl.textContent = message || 'Enter a channel and press Connect.';
+      elements.statusEl.textContent = message || 'Введіть назву каналу та натисніть Підключитись.';
       break;
   }
 }

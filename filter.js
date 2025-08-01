@@ -41,7 +41,7 @@ export const spamRuleDefinitions = {
     }
   },
   mentions: {
-    label: "💬 Небажані згадки @username",
+    label: "💬 Діалоги чатерсів @user",
     test: (message, tags, channelName, moderatorName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
@@ -68,15 +68,15 @@ export const spamRuleDefinitions = {
     test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Russian Chars" } : null
   },
   commandOnly: {
-    label: "📋 Фільтрувати команди (!drops)",
+    label: "📋 Фільтрувати команди (!drops, etc.)",
     test: (message) => /^![a-zA-Z\u0400-\u04FF0-9_]+/.test(message.trim()) ? { reason: "Команда" } : null
   },
   link: {
-    label: "🔗 Фільтрувати повідомлення з посиланнями",
+    label: "🔗 Фільтрувати посилання",
     test: (message) => /(https?:\/\/[^\s]+|\w+\.\w+\/\S+)/i.test(message) ? { reason: "Посилання" } : null
   },
   allCaps: {
-    label: "🔠 Фільтрувати КАПС повідомлення",
+    label: "🔠 Фільтрувати КАПС",
     test: (message) => {
       const words = message.split(' ').filter(w => w.length > 1);
       const nonEmoteWords = words.filter(word => !get7TVEmoteUrl(word));
@@ -87,7 +87,7 @@ export const spamRuleDefinitions = {
     }
   },
   emoteOnly: {
-    label: "🤣 Фільтрувати повідомлення лише з емодзі",
+    label: "🤣 Фільтрувати лише емодзі",
     test: (message, tags) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
       if (cleanMessage.length === 0) return null;
