@@ -1,0 +1,75 @@
+/* Simple scrollbar styling for a better look */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1f2937; /* bg-gray-800 */
+}
+::-webkit-scrollbar-thumb {
+    background: #4b5563; /* bg-gray-600 */
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #6b7280; /* bg-gray-500 */
+}
+.chat-line {
+    padding: 4px 8px;
+    border-radius: 4px;
+    animation: fadeIn 0.3s ease-in-out;
+    word-break: break-word;
+}
+.chat-line:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.badge {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-right: 4px;
+    vertical-align: -0.125em;
+}
+.spam-label {
+    background-color: #4b5563;
+    color: #e5e7eb;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+    margin-right: 6px;
+}
+/* Settings Modal */
+#settings-modal.hidden {
+    display: none;
+}
+/* Toggle Switch styling */
+.toggle-checkbox:checked {
+    right: 0;
+    border-color: #4f46e5;
+}
+.toggle-checkbox:checked + .toggle-label {
+    background-color: #4f46e5;
+}
+/* Custom Tooltip styling */
+.highlighted-word {
+    color: #f87171; /* red-400 */
+    text-decoration: underline dotted;
+    cursor: pointer;
+}
+#global-tooltip {
+    transition: opacity 0.2s ease-in-out;
+}
+/* Copy Notification */
+#copy-notification {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+/* Emote styling */
+.emote {
+    display: inline-block;
+    height: 28px;
+    vertical-align: middle;
+    margin: -4px 2px;
+}
