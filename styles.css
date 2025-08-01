@@ -73,3 +73,10 @@
     vertical-align: middle;
     margin: -4px 2px;
 }
+/* Timestamp styling */
+.chat-timestamp {
+    color: #9ca3af; /* text-gray-400 */
+    font-size: 0.75rem; /* text-sm */
+    margin-right: 6px;
+    vertical-align: middle;
+}

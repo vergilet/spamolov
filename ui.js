@@ -27,10 +27,26 @@ export const elements = {
   createChatLine(badges, username, message, color, tags, spamResult) {
     const line = document.createElement('div');
     line.className = 'chat-line';
+
+    // Add timestamp
+    const timestamp = tags['tmi-sent-ts'];
+    if (timestamp) {
+      const date = new Date(parseInt(timestamp));
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'chat-timestamp';
+      timeSpan.textContent = timeString;
+      line.appendChild(timeSpan);
+    }
+
     const userSpan = document.createElement('span');
     userSpan.style.color = color;
     userSpan.style.fontWeight = 'bold';
     userSpan.innerHTML = `${badges}${username}: `;
+    line.appendChild(userSpan);
+
     const messageSpan = document.createElement('span');
     if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
       const labelSpan = document.createElement('span');
@@ -42,7 +58,6 @@ export const elements = {
     const contentFragment = buildMessageContent(message, tags, spamResult, this.settings);
     messageSpan.appendChild(contentFragment);
 
-    line.appendChild(userSpan);
     line.appendChild(messageSpan);
     return line;
   },
@@ -167,23 +182,21 @@ function buildMessageContent(message, tags, spamResult, settings) {
       img.className = 'emote';
       img.alt = part;
       fragment.appendChild(img);
-      return;
-    }
-
-    const highlightMap = (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words)
-      ? spamResult.words.reduce((acc, word) => {
+    } else if (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words) {
+      const highlightMap = spamResult.words.reduce((acc, word) => {
         acc[word.ru.toLowerCase()] = word.ua;
         return acc;
-      }, {})
-      : null;
-
-    const lowerPart = part.toLowerCase();
-    if (highlightMap && highlightMap[lowerPart]) {
-      const span = document.createElement('span');
-      span.className = 'highlighted-word';
-      span.setAttribute('data-tooltip', highlightMap[lowerPart]);
-      span.textContent = part;
-      fragment.appendChild(span);
+      }, {});
+      const lowerPart = part.toLowerCase();
+      if (highlightMap[lowerPart]) {
+        const span = document.createElement('span');
+        span.className = 'highlighted-word';
+        span.setAttribute('data-tooltip', highlightMap[lowerPart]);
+        span.textContent = part;
+        fragment.appendChild(span);
+      } else {
+        fragment.appendChild(document.createTextNode(part));
+      }
     } else {
       fragment.appendChild(document.createTextNode(part));
     }

@@ -55,7 +55,6 @@ export const spamRuleDefinitions = {
   foreignLang: {
     label: "🛑 Лише Українська та Англійська мови",
     test: (message) => {
-      // Remove invisible "tag" characters before testing
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
       const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u;
       if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
@@ -90,7 +89,9 @@ export const spamRuleDefinitions = {
   emoteOnly: {
     label: "🤣 Фільтрувати повідомлення лише з емодзі",
     test: (message, tags) => {
-      // Get all native emote text from the message
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      if (cleanMessage.length === 0) return null;
+
       const nativeEmotes = new Set();
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
         tags.emotes.split('/').forEach(range => {
@@ -103,10 +104,8 @@ export const spamRuleDefinitions = {
         });
       }
 
-      // Split message into words
-      const words = message.split(' ').filter(w => w.length > 0);
+      const words = cleanMessage.split(' ').filter(w => w.length > 0);
 
-      // Check if every word is either a native emote or a 7TV emote
       const allAreEmotes = words.every(word => {
         return nativeEmotes.has(word) || get7TVEmoteUrl(word);
       });
@@ -125,11 +124,14 @@ export const spamRuleDefinitions = {
       const COPYPASTA_TIME_WINDOW_MS = 60000;
       const now = Date.now();
       recentBigMessages = recentBigMessages.filter(msg => now - msg.timestamp < COPYPASTA_TIME_WINDOW_MS);
-      if (message.length >= COPYPASTA_MIN_LENGTH) {
-        if (recentBigMessages.some(msg => msg.text === message)) {
+
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+
+      if (cleanMessage.length >= COPYPASTA_MIN_LENGTH) {
+        if (recentBigMessages.some(msg => msg.text === cleanMessage)) {
           return { reason: "Паста" };
         }
-        recentBigMessages.push({ text: message, timestamp: now });
+        recentBigMessages.push({ text: cleanMessage, timestamp: now });
       }
       return null;
     }
