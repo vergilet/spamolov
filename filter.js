@@ -54,7 +54,15 @@ export const spamRuleDefinitions = {
   },
   foreignLang: {
     label: "🛑 Лише Українська та Англійська мови",
-    test: (message) => /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u.test(message) ? { reason: "Іноземне" } : null
+    test: (message) => {
+      // Remove invisible "tag" characters before testing
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
+      const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u;
+      if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
+        return { reason: "Іноземне" };
+      }
+      return null;
+    }
   },
   russianChars: {
     label: "🧟 Фільтрувати терористичне",
@@ -72,7 +80,6 @@ export const spamRuleDefinitions = {
     label: "🔠 Фільтрувати КАПС повідомлення",
     test: (message) => {
       const words = message.split(' ').filter(w => w.length > 1);
-      // Filter out 7TV emotes before checking for caps
       const nonEmoteWords = words.filter(word => !get7TVEmoteUrl(word));
       if (nonEmoteWords.length > 1 && nonEmoteWords.every(word => word === word.toUpperCase() && /[A-Z]/.test(word))) {
         return { reason: "КАПС" };
@@ -83,22 +90,31 @@ export const spamRuleDefinitions = {
   emoteOnly: {
     label: "🤣 Фільтрувати повідомлення лише з емодзі",
     test: (message, tags) => {
+      // Get all native emote text from the message
+      const nativeEmotes = new Set();
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
-        let charIsEmote = new Array(message.length).fill(false);
         tags.emotes.split('/').forEach(range => {
           const [id, positions] = range.split(':');
           if (!positions) return;
           positions.split(',').forEach(pos => {
             const [start, end] = pos.split('-').map(Number);
-            for (let i = start; i <= end; i++) {
-              if (i < charIsEmote.length) charIsEmote[i] = true;
-            }
+            nativeEmotes.add(message.substring(start, end + 1));
           });
         });
-        if (![...message].some((char, i) => !charIsEmote[i] && char !== ' ')) {
-          return { reason: "Лише емодзі" };
-        }
       }
+
+      // Split message into words
+      const words = message.split(' ').filter(w => w.length > 0);
+
+      // Check if every word is either a native emote or a 7TV emote
+      const allAreEmotes = words.every(word => {
+        return nativeEmotes.has(word) || get7TVEmoteUrl(word);
+      });
+
+      if (allAreEmotes && words.length > 0) {
+        return { reason: "Лише емодзі" };
+      }
+
       return null;
     }
   },
