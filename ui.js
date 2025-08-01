@@ -63,10 +63,25 @@ export const elements = {
   createChatLine(badges, username, message, color, tags, spamResult) {
     const line = document.createElement('div');
     line.className = 'chat-line';
+
+    const timestamp = tags['tmi-sent-ts'];
+    if (timestamp) {
+      const date = new Date(parseInt(timestamp));
+      const hours = date.getHours().toString().padStart(2, '0');
+      const minutes = date.getMinutes().toString().padStart(2, '0');
+      const timeString = `${hours}:${minutes}`;
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'chat-timestamp';
+      timeSpan.textContent = timeString;
+      line.appendChild(timeSpan);
+    }
+
     const userSpan = document.createElement('span');
     userSpan.style.color = color;
     userSpan.style.fontWeight = 'bold';
     userSpan.innerHTML = `${badges}${username}: `;
+    line.appendChild(userSpan);
+
     const messageSpan = document.createElement('span');
     if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
       const labelSpan = document.createElement('span');
@@ -78,7 +93,6 @@ export const elements = {
     const contentFragment = buildMessageContent(message, tags, spamResult, this.settings);
     messageSpan.appendChild(contentFragment);
 
-    line.appendChild(userSpan);
     line.appendChild(messageSpan);
     return line;
   },
@@ -163,7 +177,6 @@ function buildMessageContent(message, tags, spamResult, settings) {
   let tempMessage = message;
   const placeholderMap = {};
 
-  // 1. Replace native Twitch emotes with placeholders
   if (emotes && typeof emotes === 'string' && emotes.length > 0) {
     const emoteList = [];
     emotes.split('/').forEach(emoteData => {
@@ -173,7 +186,7 @@ function buildMessageContent(message, tags, spamResult, settings) {
         emoteList.push({ id, start, end, text: message.substring(start, end + 1) });
       });
     });
-    emoteList.sort((a, b) => b.start - a.start); // Sort descending
+    emoteList.sort((a, b) => b.start - a.start);
 
     emoteList.forEach((emote, i) => {
       const placeholder = `__TW_EMOTE_${i}__`;
@@ -186,10 +199,8 @@ function buildMessageContent(message, tags, spamResult, settings) {
     });
   }
 
-  // 2. Split the message into words and placeholders, keeping delimiters
   const messageParts = tempMessage.split(/(__TW_EMOTE_\d+__|\s+)/).filter(Boolean);
 
-  // 3. Process each part
   messageParts.forEach(part => {
     if (placeholderMap[part]) {
       fragment.appendChild(placeholderMap[part].cloneNode());
@@ -253,7 +264,6 @@ export function setupEventListeners(connectCallback, disconnectCallback) {
     elements.applySpamVisibility();
   });
 
-  // Tooltip and copy logic
   elements.mainChat.addEventListener('mouseover', (e) => {
     if (e.target.classList.contains('highlighted-word')) {
       showTooltip(e);
