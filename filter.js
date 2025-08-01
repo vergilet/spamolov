@@ -66,11 +66,11 @@ export const spamRuleDefinitions = {
     test: (message) => /^![a-zA-Z\u0400-\u04FF0-9_]+/.test(message.trim()) ? { reason: "Команда" } : null
   },
   link: {
-    label: "🔗 Фільтрувати повідомлення з посиланнями",
+    label: "🔗 Фільтрувати посиланням",
     test: (message) => /(https?:\/\/[^\s]+|\w+\.\w+\/\S+)/i.test(message) ? { reason: "Посилання" } : null
   },
   allCaps: {
-    label: "🔠 Фільтрувати КАПС повідомлення",
+    label: "🔠 Фільтрувати КАПС",
     test: (message) => {
       const words = message.split(' ').filter(w => w.trim().length > 0 && /[a-zA-Z\u0400-\u04FF]/.test(w));
       if (words.length > 0 && words.every(word => word === word.toUpperCase())) {
@@ -80,7 +80,7 @@ export const spamRuleDefinitions = {
     }
   },
   emoteOnly: {
-    label: "🤣 Фільтрувати повідомлення лише з емодзі",
+    label: "🤣 Фільтрувати лише емодзі",
     test: (message, tags) => {
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
         let charIsEmote = new Array(message.length).fill(false);
