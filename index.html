@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Спамолов 🛡️</title>
+  <title data-i18n="pageTitle">Спамолов 🛡️</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,20 +11,20 @@
 <div class="flex flex-col h-full max-w-7xl mx-auto p-4">
   <!-- Header Section -->
   <header class="mb-4 pb-4 border-b border-gray-700 shrink-0">
-    <h1 class="text-2xl font-bold text-white mb-4">Спамолов 🛡️</h1>
+    <h1 class="text-2xl font-bold text-white mb-4" data-i18n="headerTitle">Спамолов 🛡️</h1>
     <div class="flex flex-col gap-4">
-      <div class="flex flex-col sm:flex-row items-center gap-4">
-        <input type="text" id="channel" class="w-full sm:flex-grow bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Назва каналу на Твічі...">
-        <input type="text" id="moderator" class="w-full sm:w-1/3 bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ваш нікнейм...">
-        <button id="connectBtn" class="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200 shrink-0"> Під'єднатись </button>
+      <div class="flex items-center gap-2 md:gap-4">
+        <input type="text" id="channel" class="flex-grow bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-i18n-placeholder="channelPlaceholder">
+        <input type="text" id="moderator" class="w-1/3 md:w-1/4 bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" data-i18n-placeholder="moderatorPlaceholder">
+        <button id="connectBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors duration-200 shrink-0" data-i18n="connectButton">Під'єднатись</button>
       </div>
-      <div class="flex flex-col sm:flex-row items-center justify-between mt-2 h-auto sm:h-5 gap-4 sm:gap-0">
-        <div class="flex items-center w-full sm:w-auto">
+      <div class="flex items-center justify-between mt-2 h-5">
+        <div class="flex items-center">
           <div id="status-light" class="w-3 h-3 rounded-full bg-gray-500 mr-2 transition-colors duration-300 shrink-0"></div>
-          <div id="status" class="text-sm text-gray-400">Введіть назву каналу та натисніть Під'єднатись.</div>
+          <div id="status" class="text-sm text-gray-400" data-i18n="statusDefault">Введіть назву каналу та натисніть Під'єднатись.</div>
         </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <button id="toggle-spam-btn" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors flex items-center gap-2" title="Спам-чат">
+        <div class="flex items-center gap-2">
+          <button id="toggle-spam-btn" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors flex items-center gap-2" data-i18n-title="toggleSpamTitle">
             <svg class="w-6 h-6" id="spam-visible-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -32,9 +32,9 @@
             <svg class="w-6 h-6 hidden" id="spam-hidden-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a10.05 10.05 0 013.45-5.116m7.536-2.488A10.037 10.037 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.05 10.05 0 01-1.735 3.572m-4.04-3.572a3 3 0 11-4.243-4.243M1 1l22 22"></path>
             </svg>
-            <span class="text-sm hidden md:inline">Спам-чат</span>
+            <span class="text-sm hidden md:inline" data-i18n="toggleSpamButton">Спам-чат</span>
           </button>
-          <button id="settings-btn" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors" title="Налаштування">
+          <button id="settings-btn" class="p-2 bg-gray-700 hover:bg-gray-600 rounded-md transition-colors" data-i18n-title="settingsTitle">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -49,7 +49,7 @@
     <!-- Main Chat -->
     <div id="main-chat-container" class="flex flex-col bg-gray-800 rounded-lg p-4 overflow-hidden">
       <div class="flex justify-between items-center mb-2 shrink-0">
-        <h2 class="text-lg font-semibold text-white">Чат здорової людини</h2>
+        <h2 class="text-lg font-semibold text-white" data-i18n="mainChatTitle">Чат здорової людини</h2>
         <span id="main-chat-percentage" class="text-sm font-mono text-green-400"></span>
       </div>
       <div id="main-chat" class="flex-grow overflow-y-auto pr-2"></div>
@@ -57,7 +57,7 @@
     <!-- Spam / Other Chat -->
     <div id="spam-chat-container" class="flex flex-col bg-gray-800 rounded-lg p-4 overflow-hidden">
       <div class="flex justify-between items-center mb-2 shrink-0">
-        <h2 class="text-lg font-semibold text-white">Спам-чат</h2>
+        <h2 class="text-lg font-semibold text-white" data-i18n="spamChatTitle">Спам-чат</h2>
         <span id="spam-chat-percentage" class="text-sm font-mono text-red-400"></span>
       </div>
       <div id="spam-chat" class="flex-grow overflow-y-auto pr-2"></div>
@@ -68,7 +68,7 @@
 <div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
   <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold text-white">Налаштування фільтрів</h2>
+      <h2 class="text-xl font-bold text-white" data-i18n="settingsModalTitle">Налаштування фільтрів</h2>
       <button id="close-settings-btn" class="text-gray-400 hover:text-white">&times;</button>
     </div>
     <div id="rules-container" class="space-y-4">
@@ -78,8 +78,10 @@
 </div>
 <!-- Global Tooltip and Copy Notification -->
 <div id="global-tooltip" class="hidden fixed bg-gray-900 text-gray-200 px-3 py-1.5 rounded-md text-sm font-medium shadow-lg z-50 pointer-events-none"></div>
-<div id="copy-notification" class="fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transform translate-y-2 pointer-events-none"> Скопійовано! </div>
+<div id="copy-notification" class="fixed bottom-5 right-5 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg opacity-0 transform translate-y-2 pointer-events-none" data-i18n="copyNotification">Скопійовано!</div>
 <script src="vocabulary.js"></script>
+<script type="module" src="i18n.js"></script>
+<script type="module" src="ui-updater.js"></script>
 <script type="module" src="main.js"></script>
 </body>
 </html>
