@@ -1,3 +1,5 @@
+import { get7TVEmoteUrl } from './emotes.js';
+
 let badWordsLookup = {};
 let recentBigMessages = [];
 
@@ -13,16 +15,6 @@ export function setupVocabulary() {
 }
 
 export const spamRuleDefinitions = {
-  botMessage: {
-    label: "🤖 Фільтрувати ботяру (StreamElements)",
-    test: (message, tags) => {
-      const displayName = tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '');
-      if (displayName.toLowerCase() === 'streamelements') {
-        return { reason: "Бот" };
-      }
-      return null;
-    }
-  },
   notInTime: {
     label: "🔥 Чи не на часі?",
     test: (message) => {
@@ -38,8 +30,18 @@ export const spamRuleDefinitions = {
       return foundWords.length > 0 ? { reason: "Зрада?", words: foundWords } : null;
     }
   },
+  botMessage: {
+    label: "🤖 Фільтрувати ботяру (StreamElements)",
+    test: (message, tags) => {
+      const displayName = tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '');
+      if (displayName.toLowerCase() === 'streamelements') {
+        return { reason: "Бот" };
+      }
+      return null;
+    }
+  },
   mentions: {
-    label: "💬 Спілкування між чатерсами @username",
+    label: "💬 Небажані згадки @username",
     test: (message, tags, channelName, moderatorName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
@@ -47,40 +49,39 @@ export const spamRuleDefinitions = {
       const moderator = moderatorName ? moderatorName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
       const isAllowedMention = mentions.some(mention => mention === moderator || mention === channel);
-      return isAllowedMention ? null : { reason: "Діалог" };
+      return isAllowedMention ? null : { reason: "Згадка" };
     }
   },
   foreignLang: {
     label: "🛑 Лише Українська та Англійська мови",
-    test: (message) => {
-      const allowedPattern = /^[a-zA-Z\u0400-\u04FF\u02BC\u2019\u201C\u201D0-9\s\p{P}\p{S}\u0131\u0456]*$/u;
-      return !allowedPattern.test(message) ? { reason: "Іноземне" } : null;
-    }
+    test: (message) => /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u.test(message) ? { reason: "Іноземне" } : null
   },
   russianChars: {
     label: "🧟 Фільтрувати терористичне",
-    test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Терорист" } : null
+    test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Russian Chars" } : null
   },
   commandOnly: {
     label: "📋 Фільтрувати команди (!drops)",
     test: (message) => /^![a-zA-Z\u0400-\u04FF0-9_]+/.test(message.trim()) ? { reason: "Команда" } : null
   },
   link: {
-    label: "🔗 Фільтрувати посиланням",
+    label: "🔗 Фільтрувати повідомлення з посиланнями",
     test: (message) => /(https?:\/\/[^\s]+|\w+\.\w+\/\S+)/i.test(message) ? { reason: "Посилання" } : null
   },
   allCaps: {
-    label: "🔠 Фільтрувати КАПС",
+    label: "🔠 Фільтрувати КАПС повідомлення",
     test: (message) => {
-      const words = message.split(' ').filter(w => w.trim().length > 0 && /[a-zA-Z\u0400-\u04FF]/.test(w));
-      if (words.length > 0 && words.every(word => word === word.toUpperCase())) {
+      const words = message.split(' ').filter(w => w.length > 1);
+      // Filter out 7TV emotes before checking for caps
+      const nonEmoteWords = words.filter(word => !get7TVEmoteUrl(word));
+      if (nonEmoteWords.length > 1 && nonEmoteWords.every(word => word === word.toUpperCase() && /[A-Z]/.test(word))) {
         return { reason: "КАПС" };
       }
       return null;
     }
   },
   emoteOnly: {
-    label: "🤣 Фільтрувати лише емодзі",
+    label: "🤣 Фільтрувати повідомлення лише з емодзі",
     test: (message, tags) => {
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
         let charIsEmote = new Array(message.length).fill(false);
@@ -95,14 +96,14 @@ export const spamRuleDefinitions = {
           });
         });
         if (![...message].some((char, i) => !charIsEmote[i] && char !== ' ')) {
-          return { reason: "Лише емодзі", tags: { emotes: tags.emotes } };
+          return { reason: "Лише емодзі" };
         }
       }
       return null;
     }
   },
   copypasta: {
-    label: "🍝 Лише одна копія Паста",
+    label: "🍝 Лише одна Паста",
     test: (message) => {
       const COPYPASTA_MIN_LENGTH = 50;
       const COPYPASTA_TIME_WINDOW_MS = 60000;

@@ -124,11 +124,10 @@ export const elements = {
 function buildMessageContent(message, tags, spamResult, settings) {
   const fragment = document.createDocumentFragment();
   const emotes = tags?.emotes;
-  let messageParts = [];
-
-  // Step 1: Replace native Twitch emotes with placeholders
-  const emoteMap = {};
   let tempMessage = message;
+  const placeholderMap = {};
+
+  // 1. Replace native Twitch emotes with placeholders
   if (emotes && typeof emotes === 'string' && emotes.length > 0) {
     const emoteList = [];
     emotes.split('/').forEach(emoteData => {
@@ -138,51 +137,55 @@ function buildMessageContent(message, tags, spamResult, settings) {
         emoteList.push({ id, start, end, text: message.substring(start, end + 1) });
       });
     });
-    emoteList.sort((a, b) => b.start - a.start);
+    emoteList.sort((a, b) => b.start - a.start); // Sort descending
 
     emoteList.forEach((emote, i) => {
-      const placeholder = `__TWITCH_EMOTE_${i}__`;
+      const placeholder = `__TW_EMOTE_${i}__`;
       tempMessage = tempMessage.substring(0, emote.start) + placeholder + tempMessage.substring(emote.end + 1);
-      emoteMap[placeholder] = `<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/1.0" alt="${emote.text}">`;
+      const img = document.createElement('img');
+      img.src = `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/1.0`;
+      img.className = 'emote';
+      img.alt = emote.text;
+      placeholderMap[placeholder] = img;
     });
   }
 
-  messageParts = tempMessage.split(/(__TWITCH_EMOTE_\d+__|\s+)/);
+  // 2. Split the message into words and placeholders, keeping delimiters
+  const messageParts = tempMessage.split(/(__TW_EMOTE_\d+__|\s+)/).filter(Boolean);
 
-  // Step 2: Process text parts for 7TV emotes and highlighting
+  // 3. Process each part
   messageParts.forEach(part => {
-    if (emoteMap[part]) {
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = emoteMap[part];
-      fragment.appendChild(tempDiv.firstChild);
-    } else if (/\s+/.test(part)) {
-      fragment.appendChild(document.createTextNode(part));
+    if (placeholderMap[part]) {
+      fragment.appendChild(placeholderMap[part].cloneNode());
+      return;
+    }
+
+    const sevenTvUrl = get7TVEmoteUrl(part);
+    if (sevenTvUrl) {
+      const img = document.createElement('img');
+      img.src = sevenTvUrl;
+      img.className = 'emote';
+      img.alt = part;
+      fragment.appendChild(img);
+      return;
+    }
+
+    const highlightMap = (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words)
+      ? spamResult.words.reduce((acc, word) => {
+        acc[word.ru.toLowerCase()] = word.ua;
+        return acc;
+      }, {})
+      : null;
+
+    const lowerPart = part.toLowerCase();
+    if (highlightMap && highlightMap[lowerPart]) {
+      const span = document.createElement('span');
+      span.className = 'highlighted-word';
+      span.setAttribute('data-tooltip', highlightMap[lowerPart]);
+      span.textContent = part;
+      fragment.appendChild(span);
     } else {
-      const sevenTvUrl = get7TVEmoteUrl(part);
-      if (sevenTvUrl) {
-        const img = document.createElement('img');
-        img.src = sevenTvUrl;
-        img.className = 'emote';
-        img.alt = part;
-        fragment.appendChild(img);
-      } else if (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words) {
-        const highlightMap = spamResult.words.reduce((acc, word) => {
-          acc[word.ru.toLowerCase()] = word.ua;
-          return acc;
-        }, {});
-        const lowerPart = part.toLowerCase();
-        if (highlightMap[lowerPart]) {
-          const span = document.createElement('span');
-          span.className = 'highlighted-word';
-          span.setAttribute('data-tooltip', highlightMap[lowerPart]);
-          span.textContent = part;
-          fragment.appendChild(span);
-        } else {
-          fragment.appendChild(document.createTextNode(part));
-        }
-      } else {
-        fragment.appendChild(document.createTextNode(part));
-      }
+      fragment.appendChild(document.createTextNode(part));
     }
   });
 
