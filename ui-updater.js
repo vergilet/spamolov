@@ -1,6 +1,6 @@
 import { translations } from './i18n.js';
 
-export function applyTranslations() {
+function applyTranslations() {
   document.querySelectorAll('[data-i18n]').forEach(element => {
     const key = element.getAttribute('data-i18n');
     if (translations[key]) {
@@ -21,4 +21,11 @@ export function applyTranslations() {
       element.title = translations[key];
     }
   });
+}
+
+// Run the translation function as soon as the DOM is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', applyTranslations);
+} else {
+  applyTranslations();
 }
