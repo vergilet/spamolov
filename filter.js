@@ -111,7 +111,7 @@ export const spamRuleDefinitions = {
       });
 
       if (allAreEmotes && words.length > 0) {
-        return { reason: "Лише емодзі" };
+        return { reason: "Емодзі" };
       }
 
       return null;
