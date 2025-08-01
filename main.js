@@ -1,5 +1,5 @@
 import { elements, setupEventListeners } from './ui.js';
-import { connectToTwitch, handleMessage } from './twitch.js';
+import { connectToTwitch, disconnectFromTwitch, handleMessage } from './twitch.js';
 import { getSpamResult, setupVocabulary, spamRuleDefinitions } from './filter.js';
 
 let mainMessageCount = 0;
@@ -18,6 +18,7 @@ function updateConnectionStatus(state, message) {
       break;
     case 'connected':
       elements.statusLight.classList.add('bg-green-500');
+      elements.setConnectButtonState('connected');
       lastMessageTimestamp = Date.now();
       activityChecker = setInterval(() => {
         const secondsSince = Math.round((Date.now() - lastMessageTimestamp) / 1000);
@@ -35,11 +36,13 @@ function updateConnectionStatus(state, message) {
     case 'error':
       elements.statusLight.classList.add('bg-red-500');
       elements.statusEl.textContent = message;
+      elements.setConnectButtonState('disconnected');
       break;
     case 'disconnected':
     default:
       elements.statusLight.classList.add('bg-gray-500');
-      elements.statusEl.textContent = message || 'Введіть назву каналу та натисніть Підключитись.';
+      elements.statusEl.textContent = message || `Введіть назву каналу та натисніть Під'єднатись`;
+      elements.setConnectButtonState('disconnected');
       break;
   }
 }
@@ -86,9 +89,9 @@ function onConnect() {
 
 window.addEventListener('DOMContentLoaded', () => {
   const wordCount = setupVocabulary();
-  console.log(`Vocabulary loaded with ${wordCount} words.`);
+  console.log(`Підвантажено словник з ${wordCount} словами.`);
 
-  setupEventListeners(connect);
+  setupEventListeners(connect, disconnect);
   elements.loadSettings(spamRuleDefinitions);
 
   if (Object.keys(elements.settings.rules).length === 0) {
@@ -117,4 +120,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function connect() {
   connectToTwitch(elements.channelInput.value, onMessage, onConnect, updateConnectionStatus);
+}
+
+function disconnect() {
+  disconnectFromTwitch();
 }

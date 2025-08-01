@@ -44,6 +44,12 @@ export function connectToTwitch(channel, onMessage, onConnect, updateStatus) {
   socket.onclose = () => updateStatusCallback('disconnected');
 }
 
+export function disconnectFromTwitch() {
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.close();
+  }
+}
+
 export function handleMessage(message) {
   if (message.startsWith('PING')) {
     socket.send('PONG :tmi.twitch.tv');

@@ -23,30 +23,29 @@ export const elements = {
   globalTooltip: document.getElementById('global-tooltip'),
   copyNotification: document.getElementById('copy-notification'),
   settings: { rules: {}, isSpamVisible: true },
+  isConnected: false,
+
+  setConnectButtonState(state) {
+    if (state === 'connected') {
+      this.isConnected = true;
+      this.connectBtn.textContent = `Від'єднатись`;
+      this.connectBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+      this.connectBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+    } else {
+      this.isConnected = false;
+      this.connectBtn.textContent = `Під'єднатись`;
+      this.connectBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+      this.connectBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    }
+  },
 
   createChatLine(badges, username, message, color, tags, spamResult) {
     const line = document.createElement('div');
     line.className = 'chat-line';
-
-    // Add timestamp
-    const timestamp = tags['tmi-sent-ts'];
-    if (timestamp) {
-      const date = new Date(parseInt(timestamp));
-      const hours = date.getHours().toString().padStart(2, '0');
-      const minutes = date.getMinutes().toString().padStart(2, '0');
-      const timeString = `${hours}:${minutes}`;
-      const timeSpan = document.createElement('span');
-      timeSpan.className = 'chat-timestamp';
-      timeSpan.textContent = timeString;
-      line.appendChild(timeSpan);
-    }
-
     const userSpan = document.createElement('span');
     userSpan.style.color = color;
     userSpan.style.fontWeight = 'bold';
     userSpan.innerHTML = `${badges}${username}: `;
-    line.appendChild(userSpan);
-
     const messageSpan = document.createElement('span');
     if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
       const labelSpan = document.createElement('span');
@@ -58,6 +57,7 @@ export const elements = {
     const contentFragment = buildMessageContent(message, tags, spamResult, this.settings);
     messageSpan.appendChild(contentFragment);
 
+    line.appendChild(userSpan);
     line.appendChild(messageSpan);
     return line;
   },
@@ -206,8 +206,14 @@ function buildMessageContent(message, tags, spamResult, settings) {
 }
 
 
-export function setupEventListeners(connectCallback) {
-  elements.connectBtn.addEventListener('click', connectCallback);
+export function setupEventListeners(connectCallback, disconnectCallback) {
+  elements.connectBtn.addEventListener('click', () => {
+    if (elements.isConnected) {
+      disconnectCallback();
+    } else {
+      connectCallback();
+    }
+  });
   elements.channelInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
   elements.moderatorInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
 
