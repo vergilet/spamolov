@@ -1,7 +1,11 @@
 import { get7TVEmoteUrl } from './emotes.js';
+import { translations } from './i18n.js';
 
 export const elements = {
   connectBtn: document.getElementById('connectBtn'),
+  connectIcon: document.getElementById('connect-icon'),
+  disconnectIcon: document.getElementById('disconnect-icon'),
+  connectButtonText: document.querySelector('#connectBtn span'),
   channelInput: document.getElementById('channel'),
   moderatorInput: document.getElementById('moderator'),
   statusEl: document.getElementById('status'),
@@ -26,16 +30,33 @@ export const elements = {
   isConnected: false,
 
   setConnectButtonState(state) {
-    if (state === 'connected') {
-      this.isConnected = true;
-      this.connectBtn.textContent = `Від'єднатись`;
-      this.connectBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-      this.connectBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-    } else {
-      this.isConnected = false;
-      this.connectBtn.textContent = `Під'єднатись`;
-      this.connectBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
-      this.connectBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+    this.connectBtn.disabled = false;
+    this.connectBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-red-600', 'hover:bg-red-700', 'bg-gray-500', 'cursor-not-allowed');
+
+    switch (state) {
+      case 'connected':
+        this.isConnected = true;
+        this.connectButtonText.textContent = translations.disconnectButton;
+        this.connectBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        this.connectIcon.classList.add('hidden');
+        this.disconnectIcon.classList.remove('hidden');
+        break;
+      case 'connecting':
+        this.isConnected = false;
+        this.connectBtn.disabled = true;
+        this.connectButtonText.textContent = translations.connectingButton;
+        this.connectBtn.classList.add('bg-gray-500', 'cursor-not-allowed');
+        this.connectIcon.classList.remove('hidden');
+        this.disconnectIcon.classList.add('hidden');
+        break;
+      case 'disconnected':
+      default:
+        this.isConnected = false;
+        this.connectButtonText.textContent = translations.connectButton;
+        this.connectBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        this.connectIcon.classList.remove('hidden');
+        this.disconnectIcon.classList.add('hidden');
+        break;
     }
   },
 

@@ -1,6 +1,7 @@
 import { elements, setupEventListeners } from './ui.js';
 import { connectToTwitch, disconnectFromTwitch, handleMessage } from './twitch.js';
 import { getSpamResult, setupVocabulary, spamRuleDefinitions } from './filter.js';
+import { translations } from './i18n.js';
 
 let mainMessageCount = 0;
 let spamMessageCount = 0;
@@ -14,7 +15,8 @@ function updateConnectionStatus(state, message) {
   switch (state) {
     case 'connecting':
       elements.statusLight.classList.add('bg-yellow-500');
-      // Do not change the text while connecting
+      elements.statusEl.textContent = translations.statusConnectingText;
+      elements.setConnectButtonState('connecting');
       break;
     case 'connected':
       elements.statusLight.classList.add('bg-green-500');
@@ -25,11 +27,11 @@ function updateConnectionStatus(state, message) {
         if (secondsSince > 20) {
           elements.statusLight.classList.remove('bg-green-500');
           elements.statusLight.classList.add('bg-yellow-500');
-          elements.statusEl.textContent = `З'єднання активне (останнє повідомлення ${secondsSince} сек тому)`;
+          elements.statusEl.textContent = `${translations.statusStale} (${translations.statusLastMessage} ${secondsSince} ${translations.statusSecondsAgo})`;
         } else {
           elements.statusLight.classList.remove('bg-yellow-500');
           elements.statusLight.classList.add('bg-green-500');
-          elements.statusEl.textContent = `Під'єднано до #${elements.channelInput.value.trim().toLowerCase()} (останнє повідомлення ${secondsSince} сек тому)`;
+          elements.statusEl.textContent = `${translations.statusConnected}${elements.channelInput.value.trim().toLowerCase()} (${translations.statusLastMessage} ${secondsSince} ${translations.statusSecondsAgo})`;
         }
       }, 1000);
       break;
@@ -41,7 +43,7 @@ function updateConnectionStatus(state, message) {
     case 'disconnected':
     default:
       elements.statusLight.classList.add('bg-gray-500');
-      elements.statusEl.textContent = message || `Введіть назву каналу та натисніть Під'єднатись`;
+      elements.statusEl.textContent = message || translations.statusDefault;
       elements.setConnectButtonState('disconnected');
       break;
   }
