@@ -53,7 +53,7 @@ export const spamRuleDefinitions = {
   foreignLang: {
     label: "🛑 Лише Українська та Англійська мови",
     test: (message) => {
-      const allowedPattern = /^[a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}\u0131\u0456]*$/u;
+      const allowedPattern = /^[a-zA-Z\u0400-\u04FF\u02BC\u2019\u201C\u201D0-9\s\p{P}\p{S}\u0131\u0456]*$/u;
       return !allowedPattern.test(message) ? { reason: "Іноземне" } : null;
     }
   },
