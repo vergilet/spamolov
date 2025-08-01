@@ -1,6 +1,6 @@
 export const translations = {
-  pageTitle: "Спамолов 🛡️",
-  headerTitle: "Спамолов 🛡️",
+  pageTitle: "Спамолов",
+  headerTitle: "🛡️Спамолов",
   channelPlaceholder: "Назва каналу на Твічі...",
   moderatorPlaceholder: "Ваш нікнейм...",
   connectButton: "Під'єднатись",
