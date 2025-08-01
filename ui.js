@@ -1,3 +1,5 @@
+import { get7TVEmoteUrl } from './emotes.js';
+
 export const elements = {
   connectBtn: document.getElementById('connectBtn'),
   channelInput: document.getElementById('channel'),
@@ -22,10 +24,6 @@ export const elements = {
   copyNotification: document.getElementById('copy-notification'),
   settings: { rules: {}, isSpamVisible: true },
 
-  updateConnectionStatus(state, message) {
-    // Implementation in main.js
-  },
-
   createChatLine(badges, username, message, color, tags, spamResult) {
     const line = document.createElement('div');
     line.className = 'chat-line';
@@ -34,7 +32,7 @@ export const elements = {
     userSpan.style.fontWeight = 'bold';
     userSpan.innerHTML = `${badges}${username}: `;
     const messageSpan = document.createElement('span');
-    if (spamResult && spamResult.reason) {
+    if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
       const labelSpan = document.createElement('span');
       labelSpan.className = 'spam-label';
       labelSpan.textContent = spamResult.reason;
@@ -126,73 +124,67 @@ export const elements = {
 function buildMessageContent(message, tags, spamResult, settings) {
   const fragment = document.createDocumentFragment();
   const emotes = tags?.emotes;
+  let messageParts = [];
 
+  // Step 1: Replace native Twitch emotes with placeholders
+  const emoteMap = {};
+  let tempMessage = message;
   if (emotes && typeof emotes === 'string' && emotes.length > 0) {
-    // Parse emotes and create a sorted list
     const emoteList = [];
     emotes.split('/').forEach(emoteData => {
       const [id, positions] = emoteData.split(':');
       positions.split(',').forEach(pos => {
         const [start, end] = pos.split('-').map(Number);
-        emoteList.push({ id, start, end });
+        emoteList.push({ id, start, end, text: message.substring(start, end + 1) });
       });
     });
-    emoteList.sort((a, b) => a.start - b.start);
+    emoteList.sort((a, b) => b.start - a.start);
 
-    let lastIndex = 0;
-    emoteList.forEach(emote => {
-
-      if (emote.start > lastIndex) {
-        fragment.appendChild(document.createTextNode(message.substring(lastIndex, emote.start)));
-      }
-      // Add the emote image
-      const img = document.createElement('img');
-      img.src = `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/1.0`;
-      img.className = 'emote';
-      fragment.appendChild(img);
-      lastIndex = emote.end + 1;
+    emoteList.forEach((emote, i) => {
+      const placeholder = `__TWITCH_EMOTE_${i}__`;
+      tempMessage = tempMessage.substring(0, emote.start) + placeholder + tempMessage.substring(emote.end + 1);
+      emoteMap[placeholder] = `<img class="emote" src="https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/default/dark/1.0" alt="${emote.text}">`;
     });
-
-    // Add any remaining text after the last emote
-    if (lastIndex < message.length) {
-      fragment.appendChild(document.createTextNode(message.substring(lastIndex)));
-    }
-  } else {
-    fragment.appendChild(document.createTextNode(message));
   }
 
-  // Apply word highlighting to text nodes
-  if (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words) {
-    const highlightMap = spamResult.words.reduce((acc, word) => {
-      acc[word.ru.toLowerCase()] = word.ua;
-      return acc;
-    }, {});
+  messageParts = tempMessage.split(/(__TWITCH_EMOTE_\d+__|\s+)/);
 
-    const regex = new RegExp(`(${Object.keys(highlightMap).join('|')})`, 'gi');
-
-    fragment.childNodes.forEach(node => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent;
-        const parts = text.split(regex);
-        if (parts.length > 1) {
-          const newFragment = document.createDocumentFragment();
-          parts.forEach(part => {
-            const lowerPart = part.toLowerCase();
-            if (highlightMap[lowerPart]) {
-              const span = document.createElement('span');
-              span.className = 'highlighted-word';
-              span.setAttribute('data-tooltip', highlightMap[lowerPart]);
-              span.textContent = part;
-              newFragment.appendChild(span);
-            } else {
-              newFragment.appendChild(document.createTextNode(part));
-            }
-          });
-          node.parentNode.replaceChild(newFragment, node);
+  // Step 2: Process text parts for 7TV emotes and highlighting
+  messageParts.forEach(part => {
+    if (emoteMap[part]) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = emoteMap[part];
+      fragment.appendChild(tempDiv.firstChild);
+    } else if (/\s+/.test(part)) {
+      fragment.appendChild(document.createTextNode(part));
+    } else {
+      const sevenTvUrl = get7TVEmoteUrl(part);
+      if (sevenTvUrl) {
+        const img = document.createElement('img');
+        img.src = sevenTvUrl;
+        img.className = 'emote';
+        img.alt = part;
+        fragment.appendChild(img);
+      } else if (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words) {
+        const highlightMap = spamResult.words.reduce((acc, word) => {
+          acc[word.ru.toLowerCase()] = word.ua;
+          return acc;
+        }, {});
+        const lowerPart = part.toLowerCase();
+        if (highlightMap[lowerPart]) {
+          const span = document.createElement('span');
+          span.className = 'highlighted-word';
+          span.setAttribute('data-tooltip', highlightMap[lowerPart]);
+          span.textContent = part;
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(part));
         }
+      } else {
+        fragment.appendChild(document.createTextNode(part));
       }
-    });
-  }
+    }
+  });
 
   return fragment;
 }

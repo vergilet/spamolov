@@ -104,7 +104,7 @@ export const spamRuleDefinitions = {
   copypasta: {
     label: "🍝 Лише одна копія Паста",
     test: (message) => {
-      const COPYPASTA_MIN_LENGTH = 25;
+      const COPYPASTA_MIN_LENGTH = 50;
       const COPYPASTA_TIME_WINDOW_MS = 60000;
       const now = Date.now();
       recentBigMessages = recentBigMessages.filter(msg => now - msg.timestamp < COPYPASTA_TIME_WINDOW_MS);
