@@ -49,7 +49,7 @@ export const spamRuleDefinitions = {
       const moderator = moderatorName ? moderatorName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
       const isAllowedMention = mentions.some(mention => mention === moderator || mention === channel);
-      return isAllowedMention ? null : { reason: "Згадка" };
+      return isAllowedMention ? null : { reason: "Діалог" };
     }
   },
   foreignLang: {
