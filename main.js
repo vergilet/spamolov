@@ -57,9 +57,9 @@ function onMessage(message) {
     if (!parsedMessage) return;
 
     const channelName = elements.channelInput.value.trim();
-    const moderatorName = elements.moderatorInput.value.trim().toLowerCase();
+    const currentUserName = elements.currentUserInput.value.trim().toLowerCase();
 
-    if (moderatorName && parsedMessage.displayName.toLowerCase() === moderatorName) {
+    if (currentUserName && parsedMessage.displayName.toLowerCase() === currentUserName) {
       const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null);
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
@@ -68,7 +68,7 @@ function onMessage(message) {
       return;
     }
 
-    const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, moderatorName, elements.settings);
+    const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, currentUserName, elements.settings);
 
     const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult);
 
@@ -116,14 +116,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const params = new URLSearchParams(window.location.search);
   const channelFromUrl = params.get('channel');
-  const moderatorFromUrl = params.get('username');
+  const currentUserFromUrl = params.get('username');
   if (channelFromUrl) {
     elements.channelInput.value = channelFromUrl;
     localStorage.setItem('twitchChannel', channelFromUrl);
   }
-  if (moderatorFromUrl) {
-    elements.moderatorInput.value = moderatorFromUrl;
-    localStorage.setItem('twitchModerator', moderatorFromUrl);
+  if (currentUserFromUrl) {
+    elements.currentUserInput.value = currentUserFromUrl;
+    localStorage.setItem('twitchCurrentUser', currentUserFromUrl);
   }
   if (elements.channelInput.value) {
     connect();
