@@ -159,7 +159,7 @@ const hardSpamRules = {
     label: "😂 Фільтрувати сміх та флуд",
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 6) return null;
+      if (cleanMessage.length < 5) return null;
 
       if (/(.)\1{4,}/i.test(cleanMessage)) {
         return { reason: "Повтори" };
@@ -167,12 +167,12 @@ const hardSpamRules = {
 
       const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
 
-      if (cleanMessage.length >= 8 && uniqueChars <= 3) {
+      if (cleanMessage.length >= 7 && uniqueChars <= 3) {
         return { reason: "Повтори" };
       }
 
       const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 12 && ratio < 0.3) {
+      if (cleanMessage.length > 12 && ratio < 0.35) {
         return { reason: "Повтори" };
       }
       return null;
