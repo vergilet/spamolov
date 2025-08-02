@@ -135,14 +135,21 @@ const hardSpamRules = {
   },
   mentions: {
     label: "💬 Діалоги чатерсів @user",
-    test: (message, tags, channelName, moderatorName) => {
+    test: (message, tags, channelName, currentUserName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
       if (mentions.length === 0) return null;
-      const moderator = moderatorName ? moderatorName.toLowerCase() : '';
+
+      const currentUser = currentUserName ? currentUserName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
-      const isAllowedMention = mentions.some(mention => mention === moderator || mention === channel);
-      return isAllowedMention ? null : { reason: "Діалог" };
+
+      const mentionsCurrentUser = currentUser && mentions.includes(currentUser);
+      const mentionsChannel = channel && mentions.includes(channel);
+
+      if (mentionsCurrentUser) return { reason: "Highlight Current User" };
+      if (mentionsChannel) return { reason: "Highlight Channel" };
+
+      return { reason: "Діалог" };
     }
   },
   foreignLang: {
@@ -297,11 +304,11 @@ const hardSpamRules = {
 
 export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
 
-export function getSpamResult(message, tags, channelName, moderatorName, settings) {
+export function getSpamResult(message, tags, channelName, currentUserName, settings) {
   // First, check for hard spam rules
   for (const ruleKey in hardSpamRules) {
     if (settings.rules[ruleKey]) {
-      const result = hardSpamRules[ruleKey].test(message, tags, channelName, moderatorName);
+      const result = hardSpamRules[ruleKey].test(message, tags, channelName, currentUserName);
       if (result) return result;
     }
   }

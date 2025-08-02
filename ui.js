@@ -64,7 +64,7 @@ export const elements = {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
-    if (spamResult?.reason === 'Highlight Moderator') {
+    if (spamResult?.reason === 'Highlight Current User') {
       line.classList.add('mention-moderator');
     } else if (spamResult?.reason === 'Highlight Channel') {
       line.classList.add('mention-channel');
@@ -105,7 +105,7 @@ export const elements = {
     line.appendChild(userContainer);
 
     const messageSpan = document.createElement('span');
-    if (spamResult && spamResult.reason && !['Зрада?', 'Highlight Channel', 'Highlight Moderator'].includes(spamResult.reason)) {
+    if (spamResult && spamResult.reason && !['Зрада?', 'Highlight Channel', 'Highlight Current User'].includes(spamResult.reason)) {
       const labelSpan = document.createElement('span');
       labelSpan.className = 'spam-label';
       labelSpan.textContent = spamResult.reason;

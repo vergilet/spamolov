@@ -72,7 +72,7 @@ function onMessage(message) {
 
     const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult);
 
-    if (spamResult && (spamResult.reason === 'Зрада?' || spamResult.reason === 'Highlight Channel' || spamResult.reason === 'Highlight Moderator')) {
+    if (spamResult && (spamResult.reason === 'Зрада?' || spamResult.reason === 'Highlight Channel' || spamResult.reason === 'Highlight Current User')) {
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
