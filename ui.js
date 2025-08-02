@@ -7,7 +7,7 @@ export const elements = {
   disconnectIcon: document.getElementById('disconnect-icon'),
   connectButtonText: document.querySelector('#connectBtn span'),
   channelInput: document.getElementById('channel'),
-  moderatorInput: document.getElementById('moderator'),
+  currentUserInput: document.getElementById('currentUser'),
   statusEl: document.getElementById('status'),
   statusLight: document.getElementById('status-light'),
   mainChat: document.getElementById('main-chat'),
@@ -142,7 +142,7 @@ export const elements = {
       this.settings = { rules: {}, isSpamVisible: true };
     }
     this.channelInput.value = localStorage.getItem('twitchChannel') || '';
-    this.moderatorInput.value = localStorage.getItem('twitchModerator') || '';
+    this.currentUserInput.value = localStorage.getItem('twitchCurrentUser') || '';
   },
 
   renderSettingsToggles(spamRuleDefinitions) {
@@ -269,10 +269,10 @@ export function setupEventListeners(connectCallback, disconnectCallback) {
     }
   });
   elements.channelInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
-  elements.moderatorInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
+  elements.currentUserInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
 
   elements.channelInput.addEventListener('blur', () => localStorage.setItem('twitchChannel', elements.channelInput.value));
-  elements.moderatorInput.addEventListener('blur', () => localStorage.setItem('twitchModerator', elements.moderatorInput.value));
+  elements.currentUserInput.addEventListener('blur', () => localStorage.setItem('twitchCurrentUser', elements.currentUserInput.value));
 
   elements.settingsBtn.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
   elements.closeSettingsBtn.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));

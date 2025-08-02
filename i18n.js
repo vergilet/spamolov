@@ -1,8 +1,8 @@
 export const translations = {
-  pageTitle: "Спамолов",
-  headerTitle: "🛡️ Спамолов",
-  channelPlaceholder: "Назва каналу на Твічі...",
-  moderatorPlaceholder: "Ваш нікнейм...",
+  pageTitle: "Спамолов 🛡️",
+  headerTitle: "Спамолов 🛡️",
+  channelPlaceholder: "Канал...",
+  currentUserPlaceholder: "Ваш нік...",
   connectButton: "Під'єднатись",
   connectingButton: "Під'єднання...",
   disconnectButton: "Від'єднатись",
