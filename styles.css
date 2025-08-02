@@ -23,10 +23,10 @@
 }
 /* Highlight styles */
 .mention-channel {
-    background-color: rgba(250, 249, 196, 0.1) !important; /* Light yellow */
+    background-color: rgba(96, 182, 241, 0.6) !important; /* Light yellow */
 }
 .mention-moderator {
-    background-color: rgba(134, 239, 172, 0.1) !important; /* Light green */
+    background-color: rgba(134, 239, 172, 0.6) !important; /* Light green */
 }
 @keyframes fadeIn {
     from { opacity: 0; }
