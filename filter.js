@@ -18,7 +18,7 @@ export function setupVocabulary() {
 const highlightRule = {
   label: "🔥 Чи не на часі?",
   test: (message) => {
-    const words = message.toLowerCase().split(/[^a-zA-Z\u0400-\u04FF0-9]+/).filter(Boolean);
+    const words = message.toLowerCase().match(/\p{L}+/gu) || []; // Use Unicode property escapes to correctly match words
     const foundWords = [];
     words.forEach(word => {
       if (badWordsLookup[word]) {
