@@ -103,15 +103,14 @@ const hardSpamRules = {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 8) return null;
 
-      // Check for long repeating character sequences (e.g., "ніііііііі")
       if (/(.)\1{5,}/.test(cleanMessage)) {
         return { reason: "Повтори" };
       }
 
-      const uniqueChars = new Set(cleanMessage.split('')).size;
+      const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
       const ratio = uniqueChars / cleanMessage.length;
 
-      if (ratio < 0.35) {
+      if (ratio < 0.25 && uniqueChars < 5) {
         return { reason: "Повтори" };
       }
       return null;
@@ -121,18 +120,23 @@ const hardSpamRules = {
     label: "⌨️ Фільтрувати нісенітниці",
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 20) return null;
+      if (cleanMessage.length < 15) return null;
 
-      // High ratio of non-alphanumeric characters
       const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
-      if (nonAlphanum / cleanMessage.length > 0.4) {
+      if (nonAlphanum / cleanMessage.length > 0.5) {
         return { reason: "Нісенітниця" };
       }
 
-      // Very long word without spaces
       if (!message.includes(' ') && message.length > 25) {
         return { reason: "Нісенітниця" };
       }
+
+      const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
+      const ratio = uniqueChars / cleanMessage.length;
+      if (cleanMessage.length > 15 && ratio < 0.4) {
+        return { reason: "Нісенітниця" };
+      }
+
       return null;
     }
   },
