@@ -96,23 +96,52 @@ const hardSpamRules = {
       return null;
     }
   },
+  mentionAndEmotes: {
+    label: "📢 Фільтрувати згадки з емодзі",
+    test: (message, tags, channelName, moderatorName) => {
+      const mentionRegex = /@(\w+)/g;
+      const mentions = (message.match(mentionRegex) || []);
+      if (mentions.length === 0) return null;
+
+      let messageWithoutMentions = message;
+      mentions.forEach(mention => {
+        messageWithoutMentions = messageWithoutMentions.replace(mention, '');
+      });
+
+      const cleanMessage = messageWithoutMentions.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      if (cleanMessage.length === 0) return null; // Only mentions, no emotes
+
+      const nativeEmotes = new Set();
+      if (tags && typeof tags.emotes === 'string' && tags.emotes) {
+        tags.emotes.split('/').forEach(range => {
+          const [id, positions] = range.split(':');
+          if (!positions) return;
+          positions.split(',').forEach(pos => {
+            const [start, end] = pos.split('-').map(Number);
+            nativeEmotes.add(message.substring(start, end + 1));
+          });
+        });
+      }
+
+      const words = cleanMessage.split(' ').filter(w => w.length > 0);
+      const allAreEmotes = words.every(word => nativeEmotes.has(word) || get7TVEmoteUrl(word));
+
+      if (allAreEmotes) {
+        return { reason: "Згадка + емодзі" };
+      }
+      return null;
+    }
+  },
   mentions: {
     label: "💬 Діалоги чатерсів @user",
     test: (message, tags, channelName, moderatorName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
       if (mentions.length === 0) return null;
-
       const moderator = moderatorName ? moderatorName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
-
-      const mentionsModerator = moderator && mentions.includes(moderator);
-      const mentionsChannel = channel && mentions.includes(channel);
-
-      if (mentionsModerator) return { reason: "Highlight Moderator" };
-      if (mentionsChannel) return { reason: "Highlight Channel" };
-
-      return { reason: "Діалог" }; // It's a mention, but not of the mod or channel
+      const isAllowedMention = mentions.some(mention => mention === moderator || mention === channel);
+      return isAllowedMention ? null : { reason: "Діалог" };
     }
   },
   foreignLang: {
@@ -174,12 +203,16 @@ const hardSpamRules = {
 
       const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
 
-      if (cleanMessage.length >= 7 && uniqueChars <= 3) {
+      if (cleanMessage.length >= 6 && uniqueChars <= 2) {
+        return { reason: "Повтори" };
+      }
+
+      if (cleanMessage.length >= 8 && uniqueChars <= 3) {
         return { reason: "Повтори" };
       }
 
       const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 12 && ratio < 0.35) {
+      if (cleanMessage.length > 12 && ratio < 0.3) {
         return { reason: "Повтори" };
       }
       return null;
