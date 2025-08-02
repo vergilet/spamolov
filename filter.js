@@ -81,17 +81,20 @@ const hardSpamRules = {
   allCaps: {
     label: "🔠 Фільтрувати КАПС",
     test: (message) => {
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
-      const words = cleanMessage.split(' ').filter(w => w.length > 1 && !get7TVEmoteUrl(w));
-      if (words.length < 1) return null;
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      const words = cleanMessage.split(' ').filter(w => w.length > 0 && !get7TVEmoteUrl(w));
+      if (words.length === 0) return null;
 
       const letters = cleanMessage.match(/\p{L}/gu) || [];
-      if (letters.length < 8) return null;
+      if (letters.length < 4) return null;
 
-      const uppercaseLetters = cleanMessage.match(/\p{Lu}/gu) || [];
-      const uppercaseRatio = uppercaseLetters.length / letters.length;
+      const allWordsAreCaps = words.every(word => {
+        const wordLetters = word.match(/\p{L}/gu) || [];
+        if (wordLetters.length === 0) return true; // Ignore parts without letters (e.g. "??")
+        return word === word.toUpperCase();
+      });
 
-      if (uppercaseRatio > 0.8) {
+      if (allWordsAreCaps) {
         return { reason: "КАПС" };
       }
       return null;
