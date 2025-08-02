@@ -98,7 +98,7 @@ const hardSpamRules = {
     }
   },
   mentionAndEmotes: {
-    label: "� Фільтрувати згадки з емодзі",
+    label: "📢 Фільтрувати згадки з емодзі",
     test: (message, tags, channelName, moderatorName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []);
