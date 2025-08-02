@@ -37,7 +37,7 @@ const hardSpamRules = {
     label: "🤖 Фільтрувати ботяру (StreamElements)",
     test: (message, tags) => {
       const displayName = (tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '')).toLowerCase();
-      if (displayName === 'streamelements') {
+      if (displayName === 'streamelements' || message.toLowerCase().startsWith('streamelements:')) {
         return { reason: "Бот" };
       }
       return null;
@@ -97,6 +97,53 @@ const hardSpamRules = {
 
       if (uppercaseRatio > 0.75) {
         return { reason: "КАПС" };
+      }
+
+      return null;
+    }
+  },
+  repetitiveChars: {
+    label: "😂 Фільтрувати сміх та флуд",
+    test: (message) => {
+      const cleanMessage = message.replace(/\s/g, '');
+      if (cleanMessage.length < 6) return null;
+
+      if (/(.)\1{4,}/i.test(cleanMessage)) {
+        return { reason: "Повтори" };
+      }
+
+      const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
+
+      if (cleanMessage.length >= 8 && uniqueChars <= 3) {
+        return { reason: "Повтори" };
+      }
+
+      const ratio = uniqueChars / cleanMessage.length;
+      if (cleanMessage.length > 12 && ratio < 0.3) {
+        return { reason: "Повтори" };
+      }
+      return null;
+    }
+  },
+  gibberish: {
+    label: "⌨️ Фільтрувати нісенітниці",
+    test: (message) => {
+      const cleanMessage = message.replace(/\s/g, '');
+      if (cleanMessage.length < 15) return null;
+
+      const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
+      if (nonAlphanum / cleanMessage.length > 0.5) {
+        return { reason: "Нісенітниця" };
+      }
+
+      if (!message.includes(' ') && message.length > 25) {
+        return { reason: "Нісенітниця" };
+      }
+
+      const vowels = (cleanMessage.match(/[аеиоуієїяюaeiou]/gi) || []).length;
+      const consonants = (cleanMessage.match(/[бвгґджзйклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/gi) || []).length;
+      if (vowels + consonants > 10 && (vowels / (consonants + 1) < 0.1 || consonants / (vowels + 1) > 8)) {
+        return { reason: "Нісенітниця" };
       }
 
       return null;
