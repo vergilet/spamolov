@@ -21,6 +21,13 @@
 .chat-line:nth-child(even) {
     background-color: rgba(255, 255, 255, 0.02);
 }
+/* Highlight styles */
+.mention-channel {
+    background-color: rgba(250, 249, 196, 0.1) !important; /* Light yellow */
+}
+.mention-moderator {
+    background-color: rgba(134, 239, 172, 0.1) !important; /* Light green */
+}
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
