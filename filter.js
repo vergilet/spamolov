@@ -37,7 +37,7 @@ const hardSpamRules = {
     label: "🤖 Фільтрувати ботяру (StreamElements)",
     test: (message, tags) => {
       const displayName = (tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '')).toLowerCase();
-      if (displayName === 'streamelements' || message.toLowerCase().startsWith('streamelements:')) {
+      if (displayName === 'streamelements') {
         return { reason: "Бот" };
       }
       return null;
@@ -83,65 +83,20 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
       const words = cleanMessage.split(' ').filter(w => w.length > 0 && !get7TVEmoteUrl(w));
+
       if (words.length === 0) return null;
 
-      const letters = cleanMessage.match(/\p{L}/gu) || [];
+      const textToCheck = words.join('');
+      const letters = textToCheck.match(/\p{L}/gu) || [];
+
       if (letters.length < 4) return null;
 
-      const allWordsAreCaps = words.every(word => {
-        const wordLetters = word.match(/\p{L}/gu) || [];
-        if (wordLetters.length === 0) return true; // Ignore parts without letters (e.g. "??")
-        return word === word.toUpperCase();
-      });
+      const uppercaseLetters = textToCheck.match(/\p{Lu}/gu) || [];
 
-      if (allWordsAreCaps) {
+      const uppercaseRatio = uppercaseLetters.length / letters.length;
+
+      if (uppercaseRatio > 0.75) {
         return { reason: "КАПС" };
-      }
-      return null;
-    }
-  },
-  repetitiveChars: {
-    label: "😂 Фільтрувати сміх та флуд",
-    test: (message) => {
-      const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 7) return null;
-
-      if (/(.)\1{4,}/.test(cleanMessage)) {
-        return { reason: "Повтори" };
-      }
-
-      const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
-      const ratio = uniqueChars / cleanMessage.length;
-
-      if (cleanMessage.length > 10 && ratio < 0.3) {
-        return { reason: "Повтори" };
-      }
-      return null;
-    }
-  },
-  gibberish: {
-    label: "⌨️ Фільтрувати нісенітниці",
-    test: (message) => {
-      const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 15) return null;
-
-      const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
-      if (nonAlphanum / cleanMessage.length > 0.6) {
-        return { reason: "Нісенітниця" };
-      }
-
-      if (!message.includes(' ') && message.length > 25) {
-        return { reason: "Нісенітниця" };
-      }
-
-      const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
-      const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 15 && ratio > 0.7) {
-        const vowels = (cleanMessage.match(/[аеиоуієїяюaeiou]/gi) || []).length;
-        const consonants = (cleanMessage.match(/[бвгґджзйклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/gi) || []).length;
-        if (consonants / (vowels + 1) > 6) {
-          return { reason: "Нісенітниця" };
-        }
       }
 
       return null;
