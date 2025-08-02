@@ -81,9 +81,17 @@ const hardSpamRules = {
   allCaps: {
     label: "🔠 Фільтрувати КАПС",
     test: (message) => {
-      const words = message.split(' ').filter(w => w.length > 1);
-      const nonEmoteWords = words.filter(word => !get7TVEmoteUrl(word));
-      if (nonEmoteWords.length > 1 && nonEmoteWords.every(word => word === word.toUpperCase() && /\p{Lu}/u.test(word))) {
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
+      const words = cleanMessage.split(' ').filter(w => w.length > 1 && !get7TVEmoteUrl(w));
+      if (words.length < 2) return null;
+
+      const letters = cleanMessage.match(/\p{L}/gu) || [];
+      if (letters.length < 10) return null;
+
+      const uppercaseLetters = cleanMessage.match(/\p{Lu}/gu) || [];
+      const uppercaseRatio = uppercaseLetters.length / letters.length;
+
+      if (uppercaseRatio > 0.7) {
         return { reason: "КАПС" };
       }
       return null;
@@ -95,11 +103,35 @@ const hardSpamRules = {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 8) return null;
 
+      // Check for long repeating character sequences (e.g., "ніііііііі")
+      if (/(.)\1{5,}/.test(cleanMessage)) {
+        return { reason: "Повтори" };
+      }
+
       const uniqueChars = new Set(cleanMessage.split('')).size;
       const ratio = uniqueChars / cleanMessage.length;
 
-      if (ratio < 0.25) {
+      if (ratio < 0.35) {
         return { reason: "Повтори" };
+      }
+      return null;
+    }
+  },
+  gibberish: {
+    label: "⌨️ Фільтрувати нісенітниці",
+    test: (message) => {
+      const cleanMessage = message.replace(/\s/g, '');
+      if (cleanMessage.length < 20) return null;
+
+      // High ratio of non-alphanumeric characters
+      const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
+      if (nonAlphanum / cleanMessage.length > 0.4) {
+        return { reason: "Нісенітниця" };
+      }
+
+      // Very long word without spaces
+      if (!message.includes(' ') && message.length > 25) {
+        return { reason: "Нісенітниця" };
       }
       return null;
     }
