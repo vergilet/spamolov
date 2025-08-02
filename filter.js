@@ -30,6 +30,7 @@ Repetitive/Gibberish/Laughter:
 - "аххахахахахах"
 - "єсхпхпхп"
 - "аххахахахахахахаха"
+- "хаахахаххахахахаахах"
 
 All Caps:
 - "ДУШИЛКА ПІШЛА"
@@ -222,10 +223,10 @@ const hardSpamRules = {
     label: "⌨️ Фільтрувати нісенітниці",
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 15) return null;
+      if (cleanMessage.length < 10) return null;
 
       const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
-      if (nonAlphanum / cleanMessage.length > 0.5) {
+      if (nonAlphanum / cleanMessage.length > 0.6) {
         return { reason: "Нісенітниця" };
       }
 
@@ -294,7 +295,7 @@ const hardSpamRules = {
   }
 };
 
-export const spamRuleDefinitions = { notInTime: highlightRule, ...hardSpamRules };
+export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
 
 export function getSpamResult(message, tags, channelName, moderatorName, settings) {
   // First, check for hard spam rules
