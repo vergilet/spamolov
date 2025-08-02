@@ -64,6 +64,19 @@ export const elements = {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
+    // Highlight logic
+    const lowerMessage = message.toLowerCase();
+    const moderatorName = this.moderatorInput.value.trim().toLowerCase();
+    const channelName = this.channelInput.value.trim().toLowerCase();
+
+    if (channelName && lowerMessage.includes(`@${channelName}`)) {
+      line.classList.add('mention-channel');
+    }
+    if (moderatorName && lowerMessage.includes(`@${moderatorName}`)) {
+      line.classList.remove('mention-channel'); // Moderator highlight takes precedence
+      line.classList.add('mention-moderator');
+    }
+
     const timestamp = tags['tmi-sent-ts'];
     if (timestamp) {
       const date = new Date(parseInt(timestamp));
