@@ -14,27 +14,13 @@ export function setupVocabulary() {
   return Object.keys(badWordsLookup).length;
 }
 
-export const spamRuleDefinitions = {
-  notInTime: {
-    label: "🔥 Чи не на часі?",
-    test: (message) => {
-      const words = message.toLowerCase().split(/[^a-zA-Z\u0400-\u04FF0-9]+/).filter(Boolean);
-      const foundWords = [];
-      words.forEach(word => {
-        if (badWordsLookup[word]) {
-          if (!foundWords.some(fw => fw.ru === word)) {
-            foundWords.push({ ru: word, ua: badWordsLookup[word] });
-          }
-        }
-      });
-      return foundWords.length > 0 ? { reason: "Зрада?", words: foundWords } : null;
-    }
-  },
+// These rules will always move a message to the spam chat
+const hardSpamRules = {
   botMessage: {
     label: "🤖 Фільтрувати ботяру (StreamElements)",
     test: (message, tags) => {
-      const displayName = tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '');
-      if (displayName.toLowerCase() === 'streamelements') {
+      const displayName = (tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '')).toLowerCase();
+      if (displayName === 'streamelements' || message.toLowerCase().startsWith('streamelements:')) {
         return { reason: "Бот" };
       }
       return null;
@@ -138,12 +124,36 @@ export const spamRuleDefinitions = {
   }
 };
 
+// This rule only highlights words, it doesn't move the message to spam
+const highlightRule = {
+  label: "🔥 Чи не на часі?",
+  test: (message) => {
+    const words = message.toLowerCase().split(/[^a-zA-Z\u0400-\u04FF0-9]+/).filter(Boolean);
+    const foundWords = [];
+    words.forEach(word => {
+      if (badWordsLookup[word]) {
+        if (!foundWords.some(fw => fw.ru === word)) {
+          foundWords.push({ ru: word, ua: badWordsLookup[word] });
+        }
+      }
+    });
+    return foundWords.length > 0 ? { reason: "Зрада?", words: foundWords } : null;
+  }
+};
+
+export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
+
 export function getSpamResult(message, tags, channelName, moderatorName, settings) {
-  for (const ruleKey in spamRuleDefinitions) {
+  for (const ruleKey in hardSpamRules) {
     if (settings.rules[ruleKey]) {
-      const result = spamRuleDefinitions[ruleKey].test(message, tags, channelName, moderatorName);
+      const result = hardSpamRules[ruleKey].test(message, tags, channelName, moderatorName);
       if (result) return result;
     }
   }
+
+  if (settings.rules.notInTime) {
+    return highlightRule.test(message);
+  }
+
   return null;
 }
