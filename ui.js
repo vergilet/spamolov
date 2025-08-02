@@ -64,6 +64,12 @@ export const elements = {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
+    if (spamResult?.reason === 'Highlight Moderator') {
+      line.classList.add('mention-moderator');
+    } else if (spamResult?.reason === 'Highlight Channel') {
+      line.classList.add('mention-channel');
+    }
+
     const timestamp = tags['tmi-sent-ts'];
     if (timestamp) {
       const date = new Date(parseInt(timestamp));
@@ -75,8 +81,6 @@ export const elements = {
       timeSpan.textContent = timeString;
       line.appendChild(timeSpan);
     }
-
-    const contentWrapper = document.createElement('span'); // Wrapper for user and message
 
     let finalColor = color;
     if (typeof finalColor === 'string' && (finalColor === '#0000FF' || finalColor.toLowerCase() === 'rgb(0, 0, 255)')) {
@@ -98,10 +102,10 @@ export const elements = {
     userContainer.appendChild(nameSpan);
 
     userContainer.appendChild(document.createTextNode(': '));
-    contentWrapper.appendChild(userContainer);
+    line.appendChild(userContainer);
 
     const messageSpan = document.createElement('span');
-    if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
+    if (spamResult && spamResult.reason && !['Зрада?', 'Highlight Channel', 'Highlight Moderator'].includes(spamResult.reason)) {
       const labelSpan = document.createElement('span');
       labelSpan.className = 'spam-label';
       labelSpan.textContent = spamResult.reason;
@@ -111,8 +115,7 @@ export const elements = {
     const contentFragment = buildMessageContent(message, tags, spamResult, this.settings);
     messageSpan.appendChild(contentFragment);
 
-    contentWrapper.appendChild(messageSpan);
-    line.appendChild(contentWrapper);
+    line.appendChild(messageSpan);
     return line;
   },
 

@@ -102,10 +102,17 @@ const hardSpamRules = {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
       if (mentions.length === 0) return null;
+
       const moderator = moderatorName ? moderatorName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
-      const isAllowedMention = mentions.some(mention => mention === moderator || mention === channel);
-      return isAllowedMention ? null : { reason: "Діалог" };
+
+      const mentionsModerator = moderator && mentions.includes(moderator);
+      const mentionsChannel = channel && mentions.includes(channel);
+
+      if (mentionsModerator) return { reason: "Highlight Moderator" };
+      if (mentionsChannel) return { reason: "Highlight Channel" };
+
+      return { reason: "Діалог" }; // It's a mention, but not of the mod or channel
     }
   },
   foreignLang: {

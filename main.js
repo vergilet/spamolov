@@ -59,21 +59,20 @@ function onMessage(message) {
     const channelName = elements.channelInput.value.trim();
     const moderatorName = elements.moderatorInput.value.trim().toLowerCase();
 
-    // If the message is from the moderator, bypass spam check and show in main chat
     if (moderatorName && parsedMessage.displayName.toLowerCase() === moderatorName) {
       const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null);
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
       elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
-      return; // Skip further spam processing
+      return;
     }
 
     const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, moderatorName, elements.settings);
 
     const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult);
 
-    if (spamResult && spamResult.reason === 'Зрада?') {
+    if (spamResult && (spamResult.reason === 'Зрада?' || spamResult.reason === 'Highlight Channel' || spamResult.reason === 'Highlight Moderator')) {
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
