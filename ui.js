@@ -64,17 +64,6 @@ export const elements = {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
-    // Highlight logic
-    const lowerMessage = message.toLowerCase();
-    const moderatorName = this.moderatorInput.value.trim().toLowerCase();
-    const channelName = this.channelInput.value.trim().toLowerCase();
-
-    if (moderatorName && lowerMessage.includes(`@${moderatorName}`)) {
-      line.classList.add('mention-moderator');
-    } else if (lowerMessage.includes(`@${channelName}`)) {
-      line.classList.add('mention-channel');
-    }
-
     const timestamp = tags['tmi-sent-ts'];
     if (timestamp) {
       const date = new Date(parseInt(timestamp));
@@ -87,8 +76,13 @@ export const elements = {
       line.appendChild(timeSpan);
     }
 
+    let finalColor = color;
+    if (finalColor === '#0000FF' || finalColor.toLowerCase() === 'rgb(0, 0, 255)') {
+      finalColor = '#60a5fa'; // A lighter, more readable blue
+    }
+
     const userSpan = document.createElement('span');
-    userSpan.style.color = color;
+    userSpan.style.color = finalColor;
     userSpan.style.fontWeight = 'bold';
     userSpan.innerHTML = `${badges}${username}: `;
     line.appendChild(userSpan);
