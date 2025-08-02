@@ -68,7 +68,7 @@ const hardSpamRules = {
   },
   russianChars: {
     label: "🧟 Фільтрувати терористичне",
-    test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Russian Chars" } : null
+    test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Терористичне" } : null
   },
   commandOnly: {
     label: "📋 Фільтрувати команди (!drops, etc.)",
@@ -83,15 +83,15 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
       const words = cleanMessage.split(' ').filter(w => w.length > 1 && !get7TVEmoteUrl(w));
-      if (words.length < 2) return null;
+      if (words.length < 1) return null;
 
       const letters = cleanMessage.match(/\p{L}/gu) || [];
-      if (letters.length < 10) return null;
+      if (letters.length < 8) return null;
 
       const uppercaseLetters = cleanMessage.match(/\p{Lu}/gu) || [];
       const uppercaseRatio = uppercaseLetters.length / letters.length;
 
-      if (uppercaseRatio > 0.7) {
+      if (uppercaseRatio > 0.8) {
         return { reason: "КАПС" };
       }
       return null;
@@ -101,16 +101,16 @@ const hardSpamRules = {
     label: "😂 Фільтрувати сміх та флуд",
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 8) return null;
+      if (cleanMessage.length < 7) return null;
 
-      if (/(.)\1{5,}/.test(cleanMessage)) {
+      if (/(.)\1{4,}/.test(cleanMessage)) {
         return { reason: "Повтори" };
       }
 
       const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
       const ratio = uniqueChars / cleanMessage.length;
 
-      if (ratio < 0.25 && uniqueChars < 5) {
+      if (cleanMessage.length > 10 && ratio < 0.3) {
         return { reason: "Повтори" };
       }
       return null;
@@ -123,7 +123,7 @@ const hardSpamRules = {
       if (cleanMessage.length < 15) return null;
 
       const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
-      if (nonAlphanum / cleanMessage.length > 0.5) {
+      if (nonAlphanum / cleanMessage.length > 0.6) {
         return { reason: "Нісенітниця" };
       }
 
@@ -133,8 +133,12 @@ const hardSpamRules = {
 
       const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
       const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 15 && ratio < 0.4) {
-        return { reason: "Нісенітниця" };
+      if (cleanMessage.length > 15 && ratio > 0.7) {
+        const vowels = (cleanMessage.match(/[аеиоуієїяюaeiou]/gi) || []).length;
+        const consonants = (cleanMessage.match(/[бвгґджзйклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/gi) || []).length;
+        if (consonants / (vowels + 1) > 6) {
+          return { reason: "Нісенітниця" };
+        }
       }
 
       return null;
