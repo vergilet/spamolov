@@ -1,4 +1,4 @@
-const FILTERED_VOCABULARY_PAIRS = [
+const BAD_WORDS_VOCABULARY_PAIRS = [
   {"чел": "чол"},
   {"привет": "привіт"},
   {"спасибо": "дякую"},
