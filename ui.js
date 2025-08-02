@@ -77,8 +77,10 @@ export const elements = {
     }
 
     let finalColor = color;
-    if (finalColor === '#0000FF' || finalColor.toLowerCase() === 'rgb(0, 0, 255)') {
+    if (typeof finalColor === 'string' && (finalColor === '#0000FF' || finalColor.toLowerCase() === 'rgb(0, 0, 255)')) {
       finalColor = '#60a5fa'; // A lighter, more readable blue
+    } else if (!finalColor) {
+      finalColor = '#FFFFFF'; // Default color for users without one set
     }
 
     const userSpan = document.createElement('span');
