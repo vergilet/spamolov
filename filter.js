@@ -98,7 +98,7 @@ const hardSpamRules = {
     }
   },
   mentionAndEmotes: {
-    label: "📢 Фільтрувати згадки з емодзі",
+    label: "� Фільтрувати згадки з емодзі",
     test: (message, tags, channelName, moderatorName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []);
@@ -301,7 +301,6 @@ const hardSpamRules = {
 export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
 
 export function getSpamResult(message, tags, channelName, currentUserName, settings) {
-  // First, check for hard spam rules
   for (const ruleKey in hardSpamRules) {
     if (settings.rules[ruleKey]) {
       const result = hardSpamRules[ruleKey].test(message, tags, channelName, currentUserName);
@@ -309,7 +308,6 @@ export function getSpamResult(message, tags, channelName, currentUserName, setti
     }
   }
 
-  // If no hard spam, check for highlighting rule
   if (settings.rules.notInTime) {
     return highlightRule.test(message);
   }
