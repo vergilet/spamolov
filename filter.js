@@ -14,6 +14,23 @@ export function setupVocabulary() {
   return Object.keys(badWordsLookup).length;
 }
 
+// This rule only highlights words, it doesn't move the message to spam
+const highlightRule = {
+  label: "🔥 Чи не на часі?",
+  test: (message) => {
+    const words = message.toLowerCase().split(/[^a-zA-Z\u0400-\u04FF0-9]+/).filter(Boolean);
+    const foundWords = [];
+    words.forEach(word => {
+      if (badWordsLookup[word]) {
+        if (!foundWords.some(fw => fw.ru === word)) {
+          foundWords.push({ ru: word, ua: badWordsLookup[word] });
+        }
+      }
+    });
+    return foundWords.length > 0 ? { reason: "Зрада?", words: foundWords } : null;
+  }
+};
+
 // These rules will always move a message to the spam chat
 const hardSpamRules = {
   botMessage: {
@@ -66,8 +83,23 @@ const hardSpamRules = {
     test: (message) => {
       const words = message.split(' ').filter(w => w.length > 1);
       const nonEmoteWords = words.filter(word => !get7TVEmoteUrl(word));
-      if (nonEmoteWords.length > 1 && nonEmoteWords.every(word => word === word.toUpperCase() && /[A-Z]/.test(word))) {
+      if (nonEmoteWords.length > 1 && nonEmoteWords.every(word => word === word.toUpperCase() && /\p{Lu}/u.test(word))) {
         return { reason: "КАПС" };
+      }
+      return null;
+    }
+  },
+  repetitiveChars: {
+    label: "😂 Фільтрувати сміх та флуд",
+    test: (message) => {
+      const cleanMessage = message.replace(/\s/g, '');
+      if (cleanMessage.length < 8) return null;
+
+      const uniqueChars = new Set(cleanMessage.split('')).size;
+      const ratio = uniqueChars / cleanMessage.length;
+
+      if (ratio < 0.25) {
+        return { reason: "Повтори" };
       }
       return null;
     }
@@ -124,26 +156,10 @@ const hardSpamRules = {
   }
 };
 
-// This rule only highlights words, it doesn't move the message to spam
-const highlightRule = {
-  label: "🔥 Чи не на часі?",
-  test: (message) => {
-    const words = message.toLowerCase().split(/[^a-zA-Z\u0400-\u04FF0-9]+/).filter(Boolean);
-    const foundWords = [];
-    words.forEach(word => {
-      if (badWordsLookup[word]) {
-        if (!foundWords.some(fw => fw.ru === word)) {
-          foundWords.push({ ru: word, ua: badWordsLookup[word] });
-        }
-      }
-    });
-    return foundWords.length > 0 ? { reason: "Зрада?", words: foundWords } : null;
-  }
-};
-
-export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
+export const spamRuleDefinitions = { notInTime: highlightRule, ...hardSpamRules };
 
 export function getSpamResult(message, tags, channelName, moderatorName, settings) {
+  // First, check for hard spam rules
   for (const ruleKey in hardSpamRules) {
     if (settings.rules[ruleKey]) {
       const result = hardSpamRules[ruleKey].test(message, tags, channelName, moderatorName);
@@ -151,6 +167,7 @@ export function getSpamResult(message, tags, channelName, moderatorName, setting
     }
   }
 
+  // If no hard spam, check for highlighting rule
   if (settings.rules.notInTime) {
     return highlightRule.test(message);
   }
