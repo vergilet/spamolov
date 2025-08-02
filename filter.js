@@ -10,7 +10,7 @@ Repetitive/Gibberish/Laughter:
 - "ГИГИГИГИГИГИГИГИГИГИГИ"
 - "ВХАЗВАХЗЗХВАЗХВАЗХВАЗХВАХЗ"
 - "хаххахахахахаххахаххаха"
-- "хапзхаахпхзхпхдапхпххдбздбєзьзщлхщлхщзх"
+- "хапzhaahphzphdaphphhdbzdbєзьзщлхщлхщзх"
 - "АХАХАХХАХАХААЗХХХААХАХАХАХА"
 - "ІВ)_ПЩДДУЦ+_ЩЦП_+ЩП+_Ц№НЩ_+"ЕН№"
 - "))))))"
@@ -143,13 +143,9 @@ const hardSpamRules = {
       const currentUser = currentUserName ? currentUserName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
 
-      const mentionsCurrentUser = currentUser && mentions.includes(currentUser);
-      const mentionsChannel = channel && mentions.includes(channel);
+      const isAllowedMention = mentions.some(mention => mention === currentUser || mention === channel);
 
-      if (mentionsCurrentUser) return { reason: "Highlight Current User" };
-      if (mentionsChannel) return { reason: "Highlight Channel" };
-
-      return { reason: "Діалог" };
+      return isAllowedMention ? null : { reason: "Діалог" };
     }
   },
   foreignLang: {

@@ -60,13 +60,13 @@ export const elements = {
     }
   },
 
-  createChatLine(badges, username, message, color, tags, spamResult) {
+  createChatLine(badges, username, message, color, tags, spamResult, highlightType) {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
-    if (spamResult?.reason === 'Highlight Current User') {
+    if (highlightType === 'CurrentUser') {
       line.classList.add('mention-moderator');
-    } else if (spamResult?.reason === 'Highlight Channel') {
+    } else if (highlightType === 'Channel') {
       line.classList.add('mention-channel');
     }
 
@@ -105,7 +105,7 @@ export const elements = {
     line.appendChild(userContainer);
 
     const messageSpan = document.createElement('span');
-    if (spamResult && spamResult.reason && !['Зрада?', 'Highlight Channel', 'Highlight Current User'].includes(spamResult.reason)) {
+    if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
       const labelSpan = document.createElement('span');
       labelSpan.className = 'spam-label';
       labelSpan.textContent = spamResult.reason;

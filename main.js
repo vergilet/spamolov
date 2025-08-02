@@ -60,7 +60,7 @@ function onMessage(message) {
     const currentUserName = elements.currentUserInput.value.trim().toLowerCase();
 
     if (currentUserName && parsedMessage.displayName.toLowerCase() === currentUserName) {
-      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null);
+      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, 'CurrentUser');
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
@@ -72,7 +72,7 @@ function onMessage(message) {
 
     const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult);
 
-    if (spamResult && (spamResult.reason === 'Зрада?' || spamResult.reason === 'Highlight Channel' || spamResult.reason === 'Highlight Current User')) {
+    if (spamResult && spamResult.reason === 'Зрада?') {
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
