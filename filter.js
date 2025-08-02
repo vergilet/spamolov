@@ -68,11 +68,10 @@ export function setupVocabulary() {
   return Object.keys(badWordsLookup).length;
 }
 
-// This rule only highlights words, it doesn't move the message to spam
 const highlightRule = {
   label: "🔥 Чи не на часі?",
   test: (message) => {
-    const words = message.toLowerCase().match(/\p{L}+/gu) || []; // Use Unicode property escapes to correctly match words
+    const words = message.toLowerCase().match(/\p{L}+/gu) || [];
     const foundWords = [];
     words.forEach(word => {
       if (badWordsLookup[word]) {
@@ -85,7 +84,6 @@ const highlightRule = {
   }
 };
 
-// These rules will always move a message to the spam chat
 const hardSpamRules = {
   botMessage: {
     label: "🤖 Фільтрувати ботяру (StreamElements)",
@@ -99,19 +97,16 @@ const hardSpamRules = {
   },
   mentionAndEmotes: {
     label: "📢 Фільтрувати згадки з емодзі",
-    test: (message, tags, channelName, moderatorName) => {
+    test: (message, tags) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []);
       if (mentions.length === 0) return null;
-
       let messageWithoutMentions = message;
       mentions.forEach(mention => {
         messageWithoutMentions = messageWithoutMentions.replace(mention, '');
       });
-
       const cleanMessage = messageWithoutMentions.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
-      if (cleanMessage.length === 0) return null; // Only mentions, no emotes
-
+      if (cleanMessage.length === 0) return null;
       const nativeEmotes = new Set();
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
         tags.emotes.split('/').forEach(range => {
@@ -123,13 +118,9 @@ const hardSpamRules = {
           });
         });
       }
-
       const words = cleanMessage.split(' ').filter(w => w.length > 0);
       const allAreEmotes = words.every(word => nativeEmotes.has(word) || get7TVEmoteUrl(word));
-
-      if (allAreEmotes) {
-        return { reason: "Згадка + емодзі" };
-      }
+      if (allAreEmotes) return { reason: "Згадка + емодзі" };
       return null;
     }
   },
@@ -139,12 +130,9 @@ const hardSpamRules = {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
       if (mentions.length === 0) return null;
-
       const currentUser = currentUserName ? currentUserName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
-
       const isAllowedMention = mentions.some(mention => mention === currentUser || mention === channel);
-
       return isAllowedMention ? null : { reason: "Діалог" };
     }
   },
@@ -153,10 +141,7 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
       const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u;
-      if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
-        return { reason: "Іноземне" };
-      }
-      return null;
+      return FOREIGN_CHARS_REGEX.test(cleanMessage) ? { reason: "Іноземне" } : null;
     }
   },
   russianChars: {
@@ -176,23 +161,13 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
       const words = cleanMessage.split(' ').filter(w => w.length > 0 && !get7TVEmoteUrl(w));
-
       if (words.length === 0) return null;
-
       const textToCheck = words.join('');
       const letters = textToCheck.match(/\p{L}/gu) || [];
-
       if (letters.length < 4) return null;
-
       const uppercaseLetters = textToCheck.match(/\p{Lu}/gu) || [];
-
       const uppercaseRatio = uppercaseLetters.length / letters.length;
-
-      if (uppercaseRatio > 0.75) {
-        return { reason: "КАПС" };
-      }
-
-      return null;
+      return uppercaseRatio > 0.75 ? { reason: "КАПС" } : null;
     }
   },
   repetitiveChars: {
@@ -200,25 +175,12 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 5) return null;
-
-      if (/(.)\1{4,}/i.test(cleanMessage)) {
-        return { reason: "Повтори" };
-      }
-
+      if (/(.)\1{4,}/i.test(cleanMessage)) return { reason: "Повтори" };
       const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
-
-      if (cleanMessage.length >= 6 && uniqueChars <= 2) {
-        return { reason: "Повтори" };
-      }
-
-      if (cleanMessage.length >= 8 && uniqueChars <= 3) {
-        return { reason: "Повтори" };
-      }
-
+      if (cleanMessage.length >= 6 && uniqueChars <= 2) return { reason: "Повтори" };
+      if (cleanMessage.length >= 8 && uniqueChars <= 3) return { reason: "Повтори" };
       const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 12 && ratio < 0.3) {
-        return { reason: "Повтори" };
-      }
+      if (cleanMessage.length > 12 && ratio < 0.3) return { reason: "Повтори" };
       return null;
     }
   },
@@ -227,22 +189,14 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 10) return null;
-
       const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
-      if (nonAlphanum / cleanMessage.length > 0.6) {
-        return { reason: "Нісенітниця" };
-      }
-
-      if (!message.includes(' ') && message.length > 25) {
-        return { reason: "Нісенітниця" };
-      }
-
+      if (nonAlphanum / cleanMessage.length > 0.6) return { reason: "Нісенітниця" };
+      if (!message.includes(' ') && message.length > 25) return { reason: "Нісенітниця" };
       const vowels = (cleanMessage.match(/[аеиоуієїяюaeiou]/gi) || []).length;
       const consonants = (cleanMessage.match(/[бвгґджзйклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/gi) || []).length;
       if (vowels + consonants > 10 && (vowels / (consonants + 1) < 0.1 || consonants / (vowels + 1) > 8)) {
         return { reason: "Нісенітниця" };
       }
-
       return null;
     }
   },
@@ -251,7 +205,6 @@ const hardSpamRules = {
     test: (message, tags) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
       if (cleanMessage.length === 0) return null;
-
       const nativeEmotes = new Set();
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
         tags.emotes.split('/').forEach(range => {
@@ -263,17 +216,9 @@ const hardSpamRules = {
           });
         });
       }
-
       const words = cleanMessage.split(' ').filter(w => w.length > 0);
-
-      const allAreEmotes = words.every(word => {
-        return nativeEmotes.has(word) || get7TVEmoteUrl(word);
-      });
-
-      if (allAreEmotes && words.length > 0) {
-        return { reason: "Емодзі" };
-      }
-
+      const allAreEmotes = words.every(word => nativeEmotes.has(word) || get7TVEmoteUrl(word));
+      if (allAreEmotes && words.length > 0) return { reason: "Емодзі" };
       return null;
     }
   },
@@ -284,13 +229,9 @@ const hardSpamRules = {
       const COPYPASTA_TIME_WINDOW_MS = 60000;
       const now = Date.now();
       recentBigMessages = recentBigMessages.filter(msg => now - msg.timestamp < COPYPASTA_TIME_WINDOW_MS);
-
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
-
       if (cleanMessage.length >= COPYPASTA_MIN_LENGTH) {
-        if (recentBigMessages.some(msg => msg.text === cleanMessage)) {
-          return { reason: "Паста" };
-        }
+        if (recentBigMessages.some(msg => msg.text === cleanMessage)) return { reason: "Паста" };
         recentBigMessages.push({ text: cleanMessage, timestamp: now });
       }
       return null;
@@ -307,10 +248,31 @@ export function getSpamResult(message, tags, channelName, currentUserName, setti
       if (result) return result;
     }
   }
+  return null;
+}
 
-  if (settings.rules.notInTime) {
-    return highlightRule.test(message);
+export function getHighlightDetails(message, channelName, currentUserName, settings) {
+  const details = {
+    highlightType: null,
+    wordsToHighlight: []
+  };
+
+  const lowerMessage = message.toLowerCase();
+  const currentUser = currentUserName ? currentUserName.toLowerCase() : '';
+  const channel = channelName ? channelName.toLowerCase() : '';
+
+  if (currentUser && lowerMessage.includes(`@${currentUser}`)) {
+    details.highlightType = 'CurrentUser';
+  } else if (channel && lowerMessage.includes(`@${channel}`)) {
+    details.highlightType = 'Channel';
   }
 
-  return null;
+  if (settings.rules.notInTime) {
+    const highlightResult = highlightRule.test(message);
+    if (highlightResult) {
+      details.wordsToHighlight = highlightResult.words;
+    }
+  }
+
+  return details;
 }

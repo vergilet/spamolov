@@ -1,6 +1,6 @@
 import { elements, setupEventListeners } from './ui.js';
 import { connectToTwitch, disconnectFromTwitch, handleMessage } from './twitch.js';
-import { getSpamResult, setupVocabulary, spamRuleDefinitions } from './filter.js';
+import { getSpamResult, getHighlightDetails, setupVocabulary, spamRuleDefinitions } from './filter.js';
 import { translations } from './i18n.js';
 
 let mainMessageCount = 0;
@@ -60,7 +60,8 @@ function onMessage(message) {
     const currentUserName = elements.currentUserInput.value.trim().toLowerCase();
 
     if (currentUserName && parsedMessage.displayName.toLowerCase() === currentUserName) {
-      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, 'CurrentUser');
+      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, elements.settings);
+      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
       mainMessageCount++;
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
@@ -70,18 +71,15 @@ function onMessage(message) {
 
     const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, currentUserName, elements.settings);
 
-    const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult);
-
-    if (spamResult && spamResult.reason === 'Зрада?') {
-      mainMessageCount++;
-      elements.mainChat.appendChild(chatLine);
-      elements.scrollToBottom(elements.mainChat);
-    } else if (spamResult) {
+    if (spamResult) {
       spamMessageCount++;
+      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult, null);
       elements.spamChat.appendChild(chatLine);
       elements.scrollToBottom(elements.spamChat);
     } else {
       mainMessageCount++;
+      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, elements.settings);
+      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
       elements.mainChat.appendChild(chatLine);
       elements.scrollToBottom(elements.mainChat);
     }

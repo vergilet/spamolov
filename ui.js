@@ -60,13 +60,13 @@ export const elements = {
     }
   },
 
-  createChatLine(badges, username, message, color, tags, spamResult) {
+  createChatLine(badges, username, message, color, tags, spamResult, highlightDetails) {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
-    if (spamResult?.reason === 'Highlight Current User') {
+    if (highlightDetails?.highlightType === 'CurrentUser') {
       line.classList.add('mention-moderator');
-    } else if (spamResult?.reason === 'Highlight Channel') {
+    } else if (highlightDetails?.highlightType === 'Channel') {
       line.classList.add('mention-channel');
     }
 
@@ -105,14 +105,14 @@ export const elements = {
     line.appendChild(userContainer);
 
     const messageSpan = document.createElement('span');
-    if (spamResult && spamResult.reason && !['Зрада?', 'Highlight Channel', 'Highlight Current User'].includes(spamResult.reason)) {
+    if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
       const labelSpan = document.createElement('span');
       labelSpan.className = 'spam-label';
       labelSpan.textContent = spamResult.reason;
       messageSpan.appendChild(labelSpan);
     }
 
-    const contentFragment = buildMessageContent(message, tags, spamResult, this.settings);
+    const contentFragment = buildMessageContent(message, tags, highlightDetails, this.settings);
     messageSpan.appendChild(contentFragment);
 
     line.appendChild(messageSpan);
@@ -193,7 +193,7 @@ export const elements = {
   }
 };
 
-function buildMessageContent(message, tags, spamResult, settings) {
+function buildMessageContent(message, tags, highlightDetails, settings) {
   const fragment = document.createDocumentFragment();
   const emotes = tags?.emotes;
   let tempMessage = message;
@@ -236,21 +236,27 @@ function buildMessageContent(message, tags, spamResult, settings) {
       img.className = 'emote';
       img.alt = part;
       fragment.appendChild(img);
-    } else if (settings.rules.notInTime && spamResult && spamResult.reason === 'Зрада?' && spamResult.words) {
-      const highlightMap = spamResult.words.reduce((acc, word) => {
+    } else if (settings.rules.notInTime && highlightDetails && highlightDetails.wordsToHighlight.length > 0) {
+      const highlightMap = highlightDetails.wordsToHighlight.reduce((acc, word) => {
         acc[word.ru.toLowerCase()] = word.ua;
         return acc;
       }, {});
-      const lowerPart = part.toLowerCase();
-      if (highlightMap[lowerPart]) {
-        const span = document.createElement('span');
-        span.className = 'highlighted-word';
-        span.setAttribute('data-tooltip', highlightMap[lowerPart]);
-        span.textContent = part;
-        fragment.appendChild(span);
-      } else {
-        fragment.appendChild(document.createTextNode(part));
-      }
+
+      const wordRegex = new RegExp(`(\\p{L}+)`, 'gu');
+      const subParts = part.split(wordRegex);
+
+      subParts.forEach(subPart => {
+        const lowerSubPart = subPart.toLowerCase();
+        if (highlightMap[lowerSubPart]) {
+          const span = document.createElement('span');
+          span.className = 'highlighted-word';
+          span.setAttribute('data-tooltip', highlightMap[lowerSubPart]);
+          span.textContent = subPart;
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(subPart));
+        }
+      });
     } else {
       fragment.appendChild(document.createTextNode(part));
     }

@@ -1,6 +1,6 @@
 export const translations = {
-  pageTitle: "Спамолов 🛡️",
-  headerTitle: "Спамолов 🛡️",
+  pageTitle: "Спамолов",
+  headerTitle: "🛡️ Спамолов",
   channelPlaceholder: "Канал...",
   currentUserPlaceholder: "Ваш нік...",
   connectButton: "Під'єднатись",
