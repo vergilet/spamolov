@@ -64,19 +64,6 @@ export const elements = {
     const line = document.createElement('div');
     line.className = 'chat-line';
 
-    // Highlight logic
-    const lowerMessage = message.toLowerCase();
-    const moderatorName = this.moderatorInput.value.trim().toLowerCase();
-    const channelName = this.channelInput.value.trim().toLowerCase();
-
-    if (channelName && lowerMessage.includes(`@${channelName}`)) {
-      line.classList.add('mention-channel');
-    }
-    if (moderatorName && lowerMessage.includes(`@${moderatorName}`)) {
-      line.classList.remove('mention-channel'); // Moderator highlight takes precedence
-      line.classList.add('mention-moderator');
-    }
-
     const timestamp = tags['tmi-sent-ts'];
     if (timestamp) {
       const date = new Date(parseInt(timestamp));
@@ -89,6 +76,8 @@ export const elements = {
       line.appendChild(timeSpan);
     }
 
+    const contentWrapper = document.createElement('span'); // Wrapper for user and message
+
     let finalColor = color;
     if (typeof finalColor === 'string' && (finalColor === '#0000FF' || finalColor.toLowerCase() === 'rgb(0, 0, 255)')) {
       finalColor = '#60a5fa'; // A lighter, more readable blue
@@ -96,11 +85,20 @@ export const elements = {
       finalColor = '#FFFFFF'; // Default color for users without one set
     }
 
-    const userSpan = document.createElement('span');
-    userSpan.style.color = finalColor;
-    userSpan.style.fontWeight = 'bold';
-    userSpan.innerHTML = `${badges}${username}: `;
-    line.appendChild(userSpan);
+    const userContainer = document.createElement('span');
+    userContainer.style.fontWeight = 'bold';
+
+    const badgeSpan = document.createElement('span');
+    badgeSpan.innerHTML = badges;
+    userContainer.appendChild(badgeSpan);
+
+    const nameSpan = document.createElement('span');
+    nameSpan.style.color = finalColor;
+    nameSpan.textContent = username;
+    userContainer.appendChild(nameSpan);
+
+    userContainer.appendChild(document.createTextNode(': '));
+    contentWrapper.appendChild(userContainer);
 
     const messageSpan = document.createElement('span');
     if (spamResult && spamResult.reason && spamResult.reason !== 'Зрада?') {
@@ -113,7 +111,8 @@ export const elements = {
     const contentFragment = buildMessageContent(message, tags, spamResult, this.settings);
     messageSpan.appendChild(contentFragment);
 
-    line.appendChild(messageSpan);
+    contentWrapper.appendChild(messageSpan);
+    line.appendChild(contentWrapper);
     return line;
   },
 
