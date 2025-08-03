@@ -154,18 +154,18 @@ export const elements = {
       const label = document.createElement('label');
       label.className = 'flex items-center justify-between cursor-pointer';
       label.innerHTML = `
-                <span class="text-gray-300">${rule.label}</span>
+                <span class="text-sm text-gray-300">${rule.label}</span>
                 <div class="relative">
                     <input type="checkbox" id="toggle-${key}" class="sr-only toggle-checkbox" ${isChecked ? 'checked' : ''}>
-                    <div class="block bg-gray-600 w-14 h-8 rounded-full toggle-label"></div>
-                    <div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition transform ${isChecked ? 'translate-x-6' : ''}"></div>
+                    <div class="block bg-gray-600 w-10 h-6 rounded-full toggle-label"></div>
+                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${isChecked ? 'translate-x-4' : ''}"></div>
                 </div>
             `;
       const checkbox = label.querySelector('input');
       const dot = label.querySelector('.dot');
       checkbox.addEventListener('change', () => {
         this.settings.rules[key] = checkbox.checked;
-        dot.classList.toggle('translate-x-6', checkbox.checked);
+        dot.classList.toggle('translate-x-4', checkbox.checked);
         this.saveSettings();
       });
       this.rulesContainer.appendChild(label);
