@@ -44,6 +44,8 @@ Bot Messages:
 Emote Only:
 - "rap 󠀀"
 - "rap rap eminemRap"
+- "🥳"
+- "🥳🥳"
 
 Bad Words:
 - "а я не знав шо у марії мат за матом, буду знать, дякую"
@@ -270,8 +272,13 @@ const hardSpamRules = {
 
       const words = cleanMessage.split(' ').filter(w => w.length > 0);
 
+      const isOnlyEmoji = (str) => {
+        const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji_Modifier_Base}|\p{Emoji_Component}|\u200d)+$/u;
+        return emojiRegex.test(str);
+      };
+
       const allAreEmotes = words.every(word => {
-        return nativeEmotes.has(word) || get7TVEmoteUrl(word);
+        return nativeEmotes.has(word) || get7TVEmoteUrl(word) || isOnlyEmoji(word);
       });
 
       if (allAreEmotes && words.length > 0) {
