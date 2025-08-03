@@ -98,7 +98,7 @@ const hardSpamRules = {
   userRepeat: {
     label: "👯‍♀️ Фільтрувати повтори від одного юзера",
     test: (message, tags) => {
-      const USER_REPEAT_TIME_WINDOW_MS = 10000; // 10 seconds
+      const USER_REPEAT_TIME_WINDOW_MS = 60000; // 60 seconds
       const userId = tags['user-id'];
       if (!userId) return null;
 
@@ -144,8 +144,8 @@ const hardSpamRules = {
   foreignLang: {
     label: "🛑 Лише Українська та Англійська мови",
     test: (message) => {
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
-      const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u;
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FFʼ0-9\s\p{P}\p{S}]/u;
       if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
         return { reason: "Іноземне" };
       }
@@ -205,18 +205,20 @@ const hardSpamRules = {
         return { reason: "Сміття" };
       }
 
-      const uniqueChars = new Set(cleanMessage.split('')).size;
-      const ratio = uniqueChars / len;
-
-      if (len >= 7 && uniqueChars <= 2) {
-        return { reason: "Сміття" };
-      }
-      if (len >= 10 && uniqueChars <= 3) {
-        return { reason: "Сміття" };
-      }
-
-      if (len > 12 && ratio < 0.35) {
-        return { reason: "Сміття" };
+      // This check is specifically for short, low-variety messages,
+      // and avoids flagging longer, legitimate sentences.
+      if (len < 30) {
+        const uniqueChars = new Set(cleanMessage.split('')).size;
+        if (len >= 7 && uniqueChars <= 2) {
+          return { reason: "Сміття" };
+        }
+        if (len >= 10 && uniqueChars <= 3) {
+          return { reason: "Сміття" };
+        }
+        const ratio = uniqueChars / len;
+        if (len > 12 && ratio < 0.35) {
+          return { reason: "Сміття" };
+        }
       }
 
       return null;
