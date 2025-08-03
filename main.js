@@ -27,11 +27,11 @@ function updateConnectionStatus(state, message) {
         if (secondsSince > 20) {
           elements.statusLight.classList.remove('bg-green-500');
           elements.statusLight.classList.add('bg-yellow-500');
-          elements.statusEl.textContent = `${translations.statusStale} (${translations.statusLastMessage} ${secondsSince} ${translations.statusSecondsAgo})`;
+          elements.statusEl.textContent = `${translations.statusStale} (${secondsSince} ${translations.statusSecondsAgo})`;
         } else {
           elements.statusLight.classList.remove('bg-yellow-500');
           elements.statusLight.classList.add('bg-green-500');
-          elements.statusEl.textContent = `${translations.statusConnected}${elements.channelInput.value.trim().toLowerCase()} (${translations.statusLastMessage} ${secondsSince} ${translations.statusSecondsAgo})`;
+          elements.statusEl.textContent = `${translations.statusConnected}${elements.channelInput.value.trim().toLowerCase()} (${secondsSince} ${translations.statusSecondsAgo})`;
         }
       }, 1000);
       break;
@@ -111,6 +111,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   elements.renderSettingsToggles(spamRuleDefinitions);
   elements.applySpamVisibility();
+  elements.applyFullscreenMode();
 
   const params = new URLSearchParams(window.location.search);
   const channelFromUrl = params.get('channel');

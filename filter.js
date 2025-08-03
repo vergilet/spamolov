@@ -189,29 +189,40 @@ const hardSpamRules = {
     }
   },
   repetitiveChars: {
-    label: "🤭 Фільтрувати сміх та флуд",
+    label: "😂 Фільтрувати сміх та флуд",
     test: (message) => {
-      const cleanMessage = message.replace(/\s/g, '');
-      if (cleanMessage.length < 5) return null;
+      const cleanMessage = message.replace(/\s/g, '').toLowerCase();
+      const len = cleanMessage.length;
 
-      if (/(.)\1{4,}/i.test(cleanMessage)) {
+      if (len < 6) return null;
+
+      // Case 1: Long repetition of a single character (e.g., "aaaaaa").
+      // Catches 4 or more identical characters in a row.
+      if (/(.)\1{3,}/.test(cleanMessage)) {
         return { reason: "Повтори" };
       }
 
-      const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
-
-      if (cleanMessage.length >= 6 && uniqueChars <= 2) {
+      // Case 2: Repetition of a short pattern (e.g., "ахахахах", "лололол").
+      // Catches a 2-3 character sequence that repeats at least twice more.
+      if (/(.{2,3})\1{2,}/.test(cleanMessage)) {
         return { reason: "Повтори" };
       }
 
-      if (cleanMessage.length >= 8 && uniqueChars <= 3) {
+      // Case 3: Very few unique characters for the message length.
+      const uniqueChars = new Set(cleanMessage.split('')).size;
+      if (len >= 7 && uniqueChars <= 2) {
+        return { reason: "Повтори" };
+      }
+      if (len >= 10 && uniqueChars <= 3) {
         return { reason: "Повтори" };
       }
 
-      const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 12 && ratio < 0.3) {
+      // Case 4: Low ratio of unique characters for longer messages.
+      const ratio = uniqueChars / len;
+      if (len > 12 && ratio < 0.35) {
         return { reason: "Повтори" };
       }
+
       return null;
     }
   },
@@ -242,13 +253,8 @@ const hardSpamRules = {
   emoteOnly: {
     label: "🤣 Фільтрувати лише емодзі",
     test: (message, tags) => {
-      // First, remove any mentions from the message.
       const messageWithoutMentions = message.replace(/@(\w+)/g, '');
-
-      // Then, clean the result from invisible characters and trim.
       const cleanMessage = messageWithoutMentions.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
-
-      // If the message is empty after removals (e.g., it was only a mention), it's not emote-only spam.
       if (cleanMessage.length === 0) return null;
 
       const nativeEmotes = new Set();

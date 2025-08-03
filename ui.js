@@ -1,11 +1,11 @@
 import { get7TVEmoteUrl } from './emotes.js';
-import { translations } from './i18n.js';
 
 export const elements = {
+  body: document.body,
   connectBtn: document.getElementById('connectBtn'),
   connectIcon: document.getElementById('connect-icon'),
   disconnectIcon: document.getElementById('disconnect-icon'),
-  connectButtonText: document.querySelector('#connectBtn span'),
+  connectingIcon: document.getElementById('connecting-icon'),
   channelInput: document.getElementById('channel'),
   currentUserInput: document.getElementById('currentUser'),
   statusEl: document.getElementById('status'),
@@ -19,6 +19,13 @@ export const elements = {
   toggleSpamBtn: document.getElementById('toggle-spam-btn'),
   spamVisibleIcon: document.getElementById('spam-visible-icon'),
   spamHiddenIcon: document.getElementById('spam-hidden-icon'),
+  fullscreenBtn: document.getElementById('fullscreen-btn'),
+  fullscreenIcon: document.getElementById('fullscreen-icon'),
+  exitFullscreenIcon: document.getElementById('exit-fullscreen-icon'),
+  fullscreenInfo: document.getElementById('fullscreen-info'),
+  fsChannelLabel: document.getElementById('fs-channel-label'),
+  fsUserLabel: document.getElementById('fs-user-label'),
+  normalHeaderContent: document.querySelector('.normal-header-content'),
   chatGrid: document.getElementById('chat-grid'),
   mainChatContainer: document.getElementById('main-chat-container'),
   spamChatContainer: document.getElementById('spam-chat-container'),
@@ -26,36 +33,34 @@ export const elements = {
   spamChatPercentageEl: document.getElementById('spam-chat-percentage'),
   globalTooltip: document.getElementById('global-tooltip'),
   copyNotification: document.getElementById('copy-notification'),
-  settings: { rules: {}, isSpamVisible: true },
+  settings: { rules: {}, isSpamVisible: true, isFullscreen: false },
   isConnected: false,
 
   setConnectButtonState(state) {
     this.connectBtn.disabled = false;
     this.connectBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'bg-red-600', 'hover:bg-red-700', 'bg-gray-500', 'cursor-not-allowed');
 
+    this.connectIcon.classList.add('hidden');
+    this.disconnectIcon.classList.add('hidden');
+    this.connectingIcon.classList.add('hidden');
+
     switch (state) {
       case 'connected':
         this.isConnected = true;
-        this.connectButtonText.textContent = translations.disconnectButton;
         this.connectBtn.classList.add('bg-red-600', 'hover:bg-red-700');
-        this.connectIcon.classList.add('hidden');
         this.disconnectIcon.classList.remove('hidden');
         break;
       case 'connecting':
         this.isConnected = false;
         this.connectBtn.disabled = true;
-        this.connectButtonText.textContent = translations.connectingButton;
         this.connectBtn.classList.add('bg-gray-500', 'cursor-not-allowed');
-        this.connectIcon.classList.remove('hidden');
-        this.disconnectIcon.classList.add('hidden');
+        this.connectingIcon.classList.remove('hidden');
         break;
       case 'disconnected':
       default:
         this.isConnected = false;
-        this.connectButtonText.textContent = translations.connectButton;
         this.connectBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
         this.connectIcon.classList.remove('hidden');
-        this.disconnectIcon.classList.add('hidden');
         break;
     }
   },
@@ -84,9 +89,9 @@ export const elements = {
 
     let finalColor = color;
     if (typeof finalColor === 'string' && (finalColor === '#0000FF' || finalColor.toLowerCase() === 'rgb(0, 0, 255)')) {
-      finalColor = '#60a5fa'; // A lighter, more readable blue
+      finalColor = '#60a5fa';
     } else if (!finalColor) {
-      finalColor = '#FFFFFF'; // Default color for users without one set
+      finalColor = '#FFFFFF';
     }
 
     const userContainer = document.createElement('span');
@@ -136,13 +141,15 @@ export const elements = {
       const loaded = JSON.parse(savedSettings);
       this.settings = {
         rules: loaded.rules || {},
-        isSpamVisible: loaded.isSpamVisible !== false
+        isSpamVisible: loaded.isSpamVisible !== false,
+        isFullscreen: loaded.isFullscreen === true
       };
     } else {
-      this.settings = { rules: {}, isSpamVisible: true };
+      this.settings = { rules: {}, isSpamVisible: true, isFullscreen: false };
     }
     this.channelInput.value = localStorage.getItem('twitchChannel') || '';
     this.currentUserInput.value = localStorage.getItem('twitchCurrentUser') || '';
+    this.updateFullscreenLabels();
   },
 
   renderSettingsToggles(spamRuleDefinitions) {
@@ -177,6 +184,35 @@ export const elements = {
     this.mainChatContainer.classList.toggle('md:col-span-2', !this.settings.isSpamVisible);
     this.spamVisibleIcon.classList.toggle('hidden', !this.settings.isSpamVisible);
     this.spamHiddenIcon.classList.toggle('hidden', this.settings.isSpamVisible);
+  },
+
+  applyFullscreenMode() {
+    this.body.classList.toggle('fullscreen', this.settings.isFullscreen);
+    this.fullscreenIcon.classList.toggle('hidden', this.settings.isFullscreen);
+    this.exitFullscreenIcon.classList.toggle('hidden', !this.settings.isFullscreen);
+    this.updateFullscreenLabels();
+  },
+
+  updateFullscreenLabels() {
+    const channelName = this.channelInput.value;
+    if (channelName) {
+      this.fsChannelLabel.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path></svg><span>${channelName}</span>`;
+      this.fsChannelLabel.classList.add('flex');
+      this.fsChannelLabel.classList.remove('hidden');
+    } else {
+      this.fsChannelLabel.classList.add('hidden');
+      this.fsChannelLabel.classList.remove('flex');
+    }
+
+    const userName = this.currentUserInput.value;
+    if (userName) {
+      this.fsUserLabel.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><span>${userName}</span>`;
+      this.fsUserLabel.classList.add('flex');
+      this.fsUserLabel.classList.remove('hidden');
+    } else {
+      this.fsUserLabel.classList.add('hidden');
+      this.fsUserLabel.classList.remove('flex');
+    }
   },
 
   updatePercentageDisplay(mainCount, spamCount) {
@@ -277,8 +313,14 @@ export function setupEventListeners(connectCallback, disconnectCallback) {
   elements.channelInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
   elements.currentUserInput.addEventListener('keyup', (e) => e.key === 'Enter' && connectCallback());
 
-  elements.channelInput.addEventListener('blur', () => localStorage.setItem('twitchChannel', elements.channelInput.value));
-  elements.currentUserInput.addEventListener('blur', () => localStorage.setItem('twitchCurrentUser', elements.currentUserInput.value));
+  elements.channelInput.addEventListener('blur', () => {
+    localStorage.setItem('twitchChannel', elements.channelInput.value);
+    elements.updateFullscreenLabels();
+  });
+  elements.currentUserInput.addEventListener('blur', () => {
+    localStorage.setItem('twitchCurrentUser', elements.currentUserInput.value);
+    elements.updateFullscreenLabels();
+  });
 
   elements.settingsBtn.addEventListener('click', () => elements.settingsModal.classList.remove('hidden'));
   elements.closeSettingsBtn.addEventListener('click', () => elements.settingsModal.classList.add('hidden'));
@@ -290,6 +332,12 @@ export function setupEventListeners(connectCallback, disconnectCallback) {
     elements.settings.isSpamVisible = !elements.settings.isSpamVisible;
     elements.saveSettings();
     elements.applySpamVisibility();
+  });
+
+  elements.fullscreenBtn.addEventListener('click', () => {
+    elements.settings.isFullscreen = !elements.settings.isFullscreen;
+    elements.saveSettings();
+    elements.applyFullscreenMode();
   });
 
   elements.mainChat.addEventListener('mouseover', (e) => {
