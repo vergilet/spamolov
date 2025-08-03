@@ -196,20 +196,18 @@ const hardSpamRules = {
 
       if (len < 6) return null;
 
-      // Case 1: Long repetition of a single character (e.g., "aaaaaa").
-      // Catches 4 or more identical characters in a row.
-      if (/(.)\1{3,}/.test(cleanMessage)) {
+      const alphanumericOnly = message.replace(/[^a-zA-Z0-9а-яА-ЯіІїЇєЄґҐ]/g, '');
+      if (/([\p{L}\p{N}])\1{3,}/u.test(alphanumericOnly)) {
         return { reason: "Сміття" };
       }
 
-      // Case 2: Repetition of a short pattern (e.g., "ахахахах", "лололол").
-      // Catches a 2-3 character sequence that repeats at least twice more.
       if (/(.{2,3})\1{2,}/.test(cleanMessage)) {
         return { reason: "Сміття" };
       }
 
-      // Case 3: Very few unique characters for the message length.
       const uniqueChars = new Set(cleanMessage.split('')).size;
+      const ratio = uniqueChars / len;
+
       if (len >= 7 && uniqueChars <= 2) {
         return { reason: "Сміття" };
       }
@@ -217,8 +215,6 @@ const hardSpamRules = {
         return { reason: "Сміття" };
       }
 
-      // Case 4: Low ratio of unique characters for longer messages.
-      const ratio = uniqueChars / len;
       if (len > 12 && ratio < 0.35) {
         return { reason: "Сміття" };
       }
