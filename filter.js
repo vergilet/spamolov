@@ -52,10 +52,14 @@ Commands:
 - "!айкос"
 - "!рулетка 100"
 
+User Repeat:
+- "Валік, що скажете про солоні огірки з медом?" (from the same user twice in 10s)
+
 */
 
 let badWordsLookup = {};
 let recentBigMessages = [];
+let recentUserMessages = {};
 
 export function setupVocabulary() {
   if (typeof BAD_WORDS_VOCABULARY_PAIRS !== 'undefined') {
@@ -68,10 +72,15 @@ export function setupVocabulary() {
   return Object.keys(badWordsLookup).length;
 }
 
+export function clearUserRepeatHistory() {
+  recentUserMessages = {};
+}
+
+// This rule only highlights words, it doesn't move the message to spam
 const highlightRule = {
   label: "🔥 Чи не на часі?",
   test: (message) => {
-    const words = message.toLowerCase().match(/\p{L}+/gu) || [];
+    const words = message.toLowerCase().match(/\p{L}+/gu) || []; // Use Unicode property escapes to correctly match words
     const foundWords = [];
     words.forEach(word => {
       if (badWordsLookup[word]) {
@@ -84,7 +93,29 @@ const highlightRule = {
   }
 };
 
+// These rules will always move a message to the spam chat
 const hardSpamRules = {
+  userRepeat: {
+    label: "👯‍♀️ Фільтрувати повтори від одного юзера",
+    test: (message, tags) => {
+      const USER_REPEAT_TIME_WINDOW_MS = 10000; // 10 seconds
+      const userId = tags['user-id'];
+      if (!userId) return null;
+
+      const now = Date.now();
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+
+      const lastMessage = recentUserMessages[userId];
+
+      if (lastMessage && lastMessage.text === cleanMessage && (now - lastMessage.timestamp < USER_REPEAT_TIME_WINDOW_MS)) {
+        return { reason: "Повтор" };
+      }
+
+      recentUserMessages[userId] = { text: cleanMessage, timestamp: now };
+
+      return null;
+    }
+  },
   botMessage: {
     label: "🤖 Фільтрувати ботяру (StreamElements)",
     test: (message, tags) => {
@@ -95,44 +126,18 @@ const hardSpamRules = {
       return null;
     }
   },
-  mentionAndEmotes: {
-    label: "📢 Фільтрувати згадки з емодзі",
-    test: (message, tags) => {
-      const mentionRegex = /@(\w+)/g;
-      const mentions = (message.match(mentionRegex) || []);
-      if (mentions.length === 0) return null;
-      let messageWithoutMentions = message;
-      mentions.forEach(mention => {
-        messageWithoutMentions = messageWithoutMentions.replace(mention, '');
-      });
-      const cleanMessage = messageWithoutMentions.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
-      if (cleanMessage.length === 0) return null;
-      const nativeEmotes = new Set();
-      if (tags && typeof tags.emotes === 'string' && tags.emotes) {
-        tags.emotes.split('/').forEach(range => {
-          const [id, positions] = range.split(':');
-          if (!positions) return;
-          positions.split(',').forEach(pos => {
-            const [start, end] = pos.split('-').map(Number);
-            nativeEmotes.add(message.substring(start, end + 1));
-          });
-        });
-      }
-      const words = cleanMessage.split(' ').filter(w => w.length > 0);
-      const allAreEmotes = words.every(word => nativeEmotes.has(word) || get7TVEmoteUrl(word));
-      if (allAreEmotes) return { reason: "Згадка + емодзі" };
-      return null;
-    }
-  },
   mentions: {
     label: "💬 Діалоги чатерсів @user",
     test: (message, tags, channelName, currentUserName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
       if (mentions.length === 0) return null;
+
       const currentUser = currentUserName ? currentUserName.toLowerCase() : '';
       const channel = channelName ? channelName.toLowerCase() : '';
+
       const isAllowedMention = mentions.some(mention => mention === currentUser || mention === channel);
+
       return isAllowedMention ? null : { reason: "Діалог" };
     }
   },
@@ -141,7 +146,10 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '');
       const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FF0-9\s\p{P}\p{S}]/u;
-      return FOREIGN_CHARS_REGEX.test(cleanMessage) ? { reason: "Іноземне" } : null;
+      if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
+        return { reason: "Іноземне" };
+      }
+      return null;
     }
   },
   russianChars: {
@@ -161,26 +169,49 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
       const words = cleanMessage.split(' ').filter(w => w.length > 0 && !get7TVEmoteUrl(w));
+
       if (words.length === 0) return null;
+
       const textToCheck = words.join('');
       const letters = textToCheck.match(/\p{L}/gu) || [];
+
       if (letters.length < 4) return null;
+
       const uppercaseLetters = textToCheck.match(/\p{Lu}/gu) || [];
+
       const uppercaseRatio = uppercaseLetters.length / letters.length;
-      return uppercaseRatio > 0.75 ? { reason: "КАПС" } : null;
+
+      if (uppercaseRatio > 0.75) {
+        return { reason: "КАПС" };
+      }
+
+      return null;
     }
   },
   repetitiveChars: {
-    label: "😂 Фільтрувати сміх та флуд",
+    label: "🤭 Фільтрувати сміх та флуд",
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 5) return null;
-      if (/(.)\1{4,}/i.test(cleanMessage)) return { reason: "Повтори" };
+
+      if (/(.)\1{4,}/i.test(cleanMessage)) {
+        return { reason: "Повтори" };
+      }
+
       const uniqueChars = new Set(cleanMessage.toLowerCase().split('')).size;
-      if (cleanMessage.length >= 6 && uniqueChars <= 2) return { reason: "Повтори" };
-      if (cleanMessage.length >= 8 && uniqueChars <= 3) return { reason: "Повтори" };
+
+      if (cleanMessage.length >= 6 && uniqueChars <= 2) {
+        return { reason: "Повтори" };
+      }
+
+      if (cleanMessage.length >= 8 && uniqueChars <= 3) {
+        return { reason: "Повтори" };
+      }
+
       const ratio = uniqueChars / cleanMessage.length;
-      if (cleanMessage.length > 12 && ratio < 0.3) return { reason: "Повтори" };
+      if (cleanMessage.length > 12 && ratio < 0.3) {
+        return { reason: "Повтори" };
+      }
       return null;
     }
   },
@@ -189,22 +220,37 @@ const hardSpamRules = {
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 10) return null;
+
       const nonAlphanum = (cleanMessage.match(/[^a-zA-Z\u0400-\u04FF0-9]/g) || []).length;
-      if (nonAlphanum / cleanMessage.length > 0.6) return { reason: "Нісенітниця" };
-      if (!message.includes(' ') && message.length > 25) return { reason: "Нісенітниця" };
+      if (nonAlphanum / cleanMessage.length > 0.6) {
+        return { reason: "Нісенітниця" };
+      }
+
+      if (!message.includes(' ') && message.length > 25) {
+        return { reason: "Нісенітниця" };
+      }
+
       const vowels = (cleanMessage.match(/[аеиоуієїяюaeiou]/gi) || []).length;
       const consonants = (cleanMessage.match(/[бвгґджзйклмнпрстфхцчшщbcdfghjklmnpqrstvwxyz]/gi) || []).length;
       if (vowels + consonants > 10 && (vowels / (consonants + 1) < 0.1 || consonants / (vowels + 1) > 8)) {
         return { reason: "Нісенітниця" };
       }
+
       return null;
     }
   },
   emoteOnly: {
     label: "🤣 Фільтрувати лише емодзі",
     test: (message, tags) => {
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      // First, remove any mentions from the message.
+      const messageWithoutMentions = message.replace(/@(\w+)/g, '');
+
+      // Then, clean the result from invisible characters and trim.
+      const cleanMessage = messageWithoutMentions.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+
+      // If the message is empty after removals (e.g., it was only a mention), it's not emote-only spam.
       if (cleanMessage.length === 0) return null;
+
       const nativeEmotes = new Set();
       if (tags && typeof tags.emotes === 'string' && tags.emotes) {
         tags.emotes.split('/').forEach(range => {
@@ -216,9 +262,17 @@ const hardSpamRules = {
           });
         });
       }
+
       const words = cleanMessage.split(' ').filter(w => w.length > 0);
-      const allAreEmotes = words.every(word => nativeEmotes.has(word) || get7TVEmoteUrl(word));
-      if (allAreEmotes && words.length > 0) return { reason: "Емодзі" };
+
+      const allAreEmotes = words.every(word => {
+        return nativeEmotes.has(word) || get7TVEmoteUrl(word);
+      });
+
+      if (allAreEmotes && words.length > 0) {
+        return { reason: "Емодзі" };
+      }
+
       return null;
     }
   },
@@ -229,9 +283,13 @@ const hardSpamRules = {
       const COPYPASTA_TIME_WINDOW_MS = 60000;
       const now = Date.now();
       recentBigMessages = recentBigMessages.filter(msg => now - msg.timestamp < COPYPASTA_TIME_WINDOW_MS);
+
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+
       if (cleanMessage.length >= COPYPASTA_MIN_LENGTH) {
-        if (recentBigMessages.some(msg => msg.text === cleanMessage)) return { reason: "Паста" };
+        if (recentBigMessages.some(msg => msg.text === cleanMessage)) {
+          return { reason: "Паста" };
+        }
         recentBigMessages.push({ text: cleanMessage, timestamp: now });
       }
       return null;
@@ -242,12 +300,14 @@ const hardSpamRules = {
 export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
 
 export function getSpamResult(message, tags, channelName, currentUserName, settings) {
+  // First, check for hard spam rules
   for (const ruleKey in hardSpamRules) {
     if (settings.rules[ruleKey]) {
       const result = hardSpamRules[ruleKey].test(message, tags, channelName, currentUserName);
       if (result) return result;
     }
   }
+
   return null;
 }
 
