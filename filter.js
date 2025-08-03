@@ -145,7 +145,8 @@ const hardSpamRules = {
     label: "🛑 Лише Українська та Англійська мови",
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
-      const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FFʼ0-9\s\p{P}\p{S}]/u;
+      // This regex allows letters, numbers, Cyrillic, common punctuation, symbols, and emoji ranges.
+      const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FFʼ0-9\s\p{P}\p{S}\u2000-\u3300\uFE0F\uD83C-\uDBFF\uDC00-\uDFFF]/u;
       if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
         return { reason: "Іноземне" };
       }

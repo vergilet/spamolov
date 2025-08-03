@@ -191,6 +191,11 @@ export const elements = {
     this.fullscreenIcon.classList.toggle('hidden', this.settings.isFullscreen);
     this.exitFullscreenIcon.classList.toggle('hidden', !this.settings.isFullscreen);
     this.updateFullscreenLabels();
+    this.setTimeout(() => {
+      this.mainChat.scrollTop = this.mainChat.scrollHeight;
+      this.spamChat.scrollTop = this.spamChat.scrollHeight;
+    }, 1000);
+
   },
 
   updateFullscreenLabels() {
