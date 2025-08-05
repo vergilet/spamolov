@@ -167,8 +167,27 @@ const hardSpamRules = {
   repetitiveChars: {
     label: "😂 Фільтрувати сміх та флуд",
     description: "Блокує повідомлення, що складаються з повторюваних символів або груп символів (наприклад, 'ахахах', 'лоллол').",
-    test: (message) => {
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
+    test: (message, tags) => {
+      const nativeEmotes = new Set();
+      if (tags && typeof tags.emotes === 'string' && tags.emotes) {
+        tags.emotes.split('/').forEach(range => {
+          const [id, positions] = range.split(':');
+          if (!positions) return;
+          positions.split(',').forEach(pos => {
+            const [start, end] = pos.split('-').map(Number);
+            nativeEmotes.add(message.substring(start, end + 1));
+          });
+        });
+      }
+
+      const isStandardEmoji = (str) => /\p{Emoji_Presentation}/u.test(str);
+
+      const textOnlyWords = message.split(' ').filter(word => {
+        return !nativeEmotes.has(word) && !get7TVEmoteUrl(word) && !isStandardEmoji(word);
+      });
+
+      const messageWithoutEmotes = textOnlyWords.join(' ');
+      const cleanMessage = messageWithoutEmotes.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
 
       if (cleanMessage.length < 2) {
         return null;
