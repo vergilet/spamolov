@@ -1,8 +1,9 @@
-import { elements, setupEventListeners } from './ui.js';
+import * as ui from './ui.js';
 import { connectToTwitch, disconnectFromTwitch, handleMessage } from './twitch.js';
 import { getSpamResult, getHighlightDetails, setupVocabulary, spamRuleDefinitions } from './filter.js';
 import { translations } from './i18n.js';
 
+const MAX_MESSAGES_PER_CHAT = 300;
 let mainMessageCount = 0;
 let spamMessageCount = 0;
 let activityChecker = null;
@@ -10,41 +11,41 @@ let lastMessageTimestamp = 0;
 
 function updateConnectionStatus(state, message) {
   clearInterval(activityChecker);
-  elements.statusLight.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-gray-500');
+  ui.elements.statusLight.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-gray-500');
 
   switch (state) {
     case 'connecting':
-      elements.statusLight.classList.add('bg-yellow-500');
-      elements.statusEl.textContent = translations.statusConnectingText;
-      elements.setConnectButtonState('connecting');
+      ui.elements.statusLight.classList.add('bg-yellow-500');
+      ui.elements.statusEl.textContent = translations.statusConnectingText;
+      ui.elements.setConnectButtonState('connecting');
       break;
     case 'connected':
-      elements.statusLight.classList.add('bg-green-500');
-      elements.setConnectButtonState('connected');
+      ui.elements.statusLight.classList.add('bg-green-500');
+      ui.elements.setConnectButtonState('connected');
       lastMessageTimestamp = Date.now();
       activityChecker = setInterval(() => {
         const secondsSince = Math.round((Date.now() - lastMessageTimestamp) / 1000);
         if (secondsSince > 20) {
-          elements.statusLight.classList.remove('bg-green-500');
-          elements.statusLight.classList.add('bg-yellow-500');
-          elements.statusEl.textContent = `${translations.statusStale} (${secondsSince} ${translations.statusSecondsAgo})`;
+          ui.elements.statusLight.classList.remove('bg-green-500');
+          ui.elements.statusLight.classList.add('bg-yellow-500');
+          ui.elements.statusEl.textContent = `${translations.statusStale} (${secondsSince} ${translations.statusSecondsAgo})`;
         } else {
-          elements.statusLight.classList.remove('bg-yellow-500');
-          elements.statusLight.classList.add('bg-green-500');
-          elements.statusEl.textContent = `${translations.statusConnected}${elements.channelInput.value.trim().toLowerCase()} (${secondsSince} ${translations.statusSecondsAgo})`;
+          ui.elements.statusLight.classList.remove('bg-yellow-500');
+          ui.elements.statusLight.classList.add('bg-green-500');
+          ui.elements.statusEl.textContent = `${translations.statusConnected}${ui.elements.channelInput.value.trim().toLowerCase()} (${secondsSince} ${translations.statusSecondsAgo})`;
         }
       }, 1000);
       break;
     case 'error':
-      elements.statusLight.classList.add('bg-red-500');
-      elements.statusEl.textContent = message;
-      elements.setConnectButtonState('disconnected');
+      ui.elements.statusLight.classList.add('bg-red-500');
+      ui.elements.statusEl.textContent = message;
+      ui.elements.setConnectButtonState('disconnected');
       break;
     case 'disconnected':
     default:
-      elements.statusLight.classList.add('bg-gray-500');
-      elements.statusEl.textContent = message || translations.statusDefault;
-      elements.setConnectButtonState('disconnected');
+      ui.elements.statusLight.classList.add('bg-gray-500');
+      ui.elements.statusEl.textContent = message || translations.statusDefault;
+      ui.elements.setConnectButtonState('disconnected');
       break;
   }
 }
@@ -52,38 +53,67 @@ function updateConnectionStatus(state, message) {
 
 function onMessage(message) {
   try {
-    lastMessageTimestamp = Date.now(); // Update timestamp for ANY message from server
+    lastMessageTimestamp = Date.now();
     const parsedMessage = handleMessage(message);
     if (!parsedMessage) return;
 
-    const channelName = elements.channelInput.value.trim();
-    const currentUserName = elements.currentUserInput.value.trim().toLowerCase();
+    const channelName = ui.elements.channelInput.value.trim();
+    const currentUserName = ui.elements.currentUserInput.value.trim().toLowerCase();
 
-    if (currentUserName && parsedMessage.displayName.toLowerCase() === currentUserName) {
-      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, elements.settings);
-      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
+    if (!parsedMessage.isSystemMessage && currentUserName && parsedMessage.displayName.toLowerCase() === currentUserName) {
+      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, ui.elements.settings);
+      const chatLine = ui.elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
+
+      const chatEl = ui.elements.mainChat;
+      const shouldAutoScroll = chatEl.scrollHeight - chatEl.clientHeight <= chatEl.scrollTop + 150;
+
       mainMessageCount++;
-      elements.mainChat.appendChild(chatLine);
-      elements.scrollToBottom(elements.mainChat);
-      elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
+      chatEl.appendChild(chatLine);
+
+      if (shouldAutoScroll) {
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+
+      ui.elements.enforceMessageLimit(chatEl, MAX_MESSAGES_PER_CHAT);
+      ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
       return;
     }
 
-    const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, currentUserName, elements.settings);
+    const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, currentUserName, ui.elements.settings);
 
     if (spamResult) {
+      const chatEl = ui.elements.spamChat;
+      const shouldAutoScroll = chatEl.scrollHeight - chatEl.clientHeight <= chatEl.scrollTop + 150;
+
       spamMessageCount++;
-      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult, null);
-      elements.spamChat.appendChild(chatLine);
-      elements.scrollToBottom(elements.spamChat);
+      const chatLine = ui.elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult, null);
+      chatEl.appendChild(chatLine);
+
+      if (shouldAutoScroll) {
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+      ui.elements.enforceMessageLimit(chatEl, MAX_MESSAGES_PER_CHAT);
+
     } else {
+      const chatEl = ui.elements.mainChat;
+      const shouldAutoScroll = chatEl.scrollHeight - chatEl.clientHeight <= chatEl.scrollTop + 150;
+
       mainMessageCount++;
-      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, elements.settings);
-      const chatLine = elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
-      elements.mainChat.appendChild(chatLine);
-      elements.scrollToBottom(elements.mainChat);
+      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, ui.elements.settings);
+      const chatLine = ui.elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
+
+      if (parsedMessage.isSystemMessage) {
+        chatLine.classList.add('system-notification');
+      }
+
+      chatEl.appendChild(chatLine);
+
+      if (shouldAutoScroll) {
+        chatEl.scrollTop = chatEl.scrollHeight;
+      }
+      ui.elements.enforceMessageLimit(chatEl, MAX_MESSAGES_PER_CHAT);
     }
-    elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
+    ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
   } catch (e) {
     console.error("Failed to process message:", message, e);
   }
@@ -92,45 +122,50 @@ function onMessage(message) {
 function onConnect() {
   mainMessageCount = 0;
   spamMessageCount = 0;
-  elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
-  elements.mainChat.innerHTML = '';
-  elements.spamChat.innerHTML = '';
+  ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
+  ui.elements.mainChat.innerHTML = '';
+  ui.elements.spamChat.innerHTML = '';
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  const wordCount = setupVocabulary();
-  console.log(`Підвантажено словник з ${wordCount} словами.`);
+  setupVocabulary();
+  ui.setupEventListeners(connect, disconnect);
+  ui.elements.loadSettings(spamRuleDefinitions);
 
-  setupEventListeners(connect, disconnect);
-  elements.loadSettings(spamRuleDefinitions);
-
-  if (Object.keys(elements.settings.rules).length === 0) {
-    Object.keys(spamRuleDefinitions).forEach(key => elements.settings.rules[key] = true);
-    elements.saveSettings();
+  let settingsUpdated = false;
+  for (const ruleKey in spamRuleDefinitions) {
+    if (ui.elements.settings.rules[ruleKey] === undefined) {
+      ui.elements.settings.rules[ruleKey] = true;
+      settingsUpdated = true;
+    }
   }
 
-  elements.renderSettingsToggles(spamRuleDefinitions);
-  elements.applySpamVisibility();
-  elements.applyFullscreenMode();
+  if (settingsUpdated) {
+    ui.elements.saveSettings();
+  }
+
+  ui.elements.renderSettingsToggles(spamRuleDefinitions);
+  ui.elements.applySpamVisibility();
+  ui.elements.applyFullscreenMode();
 
   const params = new URLSearchParams(window.location.search);
   const channelFromUrl = params.get('channel');
   const currentUserFromUrl = params.get('username');
   if (channelFromUrl) {
-    elements.channelInput.value = channelFromUrl;
+    ui.elements.channelInput.value = channelFromUrl;
     localStorage.setItem('twitchChannel', channelFromUrl);
   }
   if (currentUserFromUrl) {
-    elements.currentUserInput.value = currentUserFromUrl;
+    ui.elements.currentUserInput.value = currentUserFromUrl;
     localStorage.setItem('twitchCurrentUser', currentUserFromUrl);
   }
-  if (elements.channelInput.value) {
+  if (ui.elements.channelInput.value) {
     connect();
   }
 });
 
 function connect() {
-  connectToTwitch(elements.channelInput.value, onMessage, onConnect, updateConnectionStatus);
+  connectToTwitch(ui.elements.channelInput.value, onMessage, onConnect, updateConnectionStatus);
 }
 
 function disconnect() {

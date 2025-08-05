@@ -62,7 +62,20 @@ export function handleMessage(message) {
       color: parsedMessage.tags['color'] || '#FFFFFF',
       content: parsedMessage.params[1],
       badges: createBadgeIcons(parsedMessage.tags.badges),
-      tags: parsedMessage.tags
+      tags: parsedMessage.tags,
+      isSystemMessage: false,
+    };
+  } else if (parsedMessage && parsedMessage.command === 'USERNOTICE') {
+    const systemMsgRaw = parsedMessage.tags['system-msg'];
+    const systemMsg = (typeof systemMsgRaw === 'string' ? systemMsgRaw : '').replace(/\\s/g, ' ');
+
+    return {
+      displayName: parsedMessage.tags['display-name'] || parsedMessage.tags['login'],
+      color: parsedMessage.tags['color'] || '#A970FF',
+      content: systemMsg || parsedMessage.params[1],
+      badges: createBadgeIcons(parsedMessage.tags.badges),
+      tags: parsedMessage.tags,
+      isSystemMessage: true,
     };
   } else if (parsedMessage?.command === 'NOTICE' && parsedMessage?.params[1]?.includes("Login authentication failed")) {
     updateStatusCallback('error', "Failed to join. Channel may not exist.");
@@ -70,6 +83,7 @@ export function handleMessage(message) {
   }
   return null;
 }
+
 
 function createBadgeIcons(badgesStr) {
   if (!badgesStr || typeof badgesStr !== 'string') return '';

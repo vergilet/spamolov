@@ -66,31 +66,41 @@
   <!-- Chat Columns -->
   <main id="chat-grid" class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
     <!-- Main Chat -->
-    <div id="main-chat-container" class="flex flex-col bg-gray-800 rounded-lg p-4 overflow-hidden">
+    <div id="main-chat-container" class="relative flex flex-col bg-gray-800 rounded-lg p-4 overflow-hidden">
       <div class="flex justify-between items-center mb-2 shrink-0">
         <h2 class="text-lg font-semibold text-white" data-i18n="mainChatTitle">Чат здорової людини</h2>
         <span id="main-chat-percentage" class="text-sm font-mono text-green-400"></span>
       </div>
       <div id="main-chat" class="flex-grow overflow-y-auto pr-2"></div>
+      <button id="main-scroll-btn" class="scroll-down-btn">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
     </div>
     <!-- Spam / Other Chat -->
-    <div id="spam-chat-container" class="flex flex-col bg-gray-800 rounded-lg p-4 overflow-hidden">
+    <div id="spam-chat-container" class="relative flex flex-col bg-gray-800 rounded-lg p-4 overflow-hidden">
       <div class="flex justify-between items-center mb-2 shrink-0">
         <h2 class="text-lg font-semibold text-white" data-i18n="spamChatTitle">Спам-чат</h2>
         <span id="spam-chat-percentage" class="text-sm font-mono text-red-400"></span>
       </div>
       <div id="spam-chat" class="flex-grow overflow-y-auto pr-2"></div>
+      <button id="spam-scroll-btn" class="scroll-down-btn">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+      </button>
     </div>
   </main>
 </div>
 <!-- Settings Modal -->
-<div id="settings-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-  <div class="bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold text-white" data-i18n="settingsModalTitle">Налаштування фільтрів</h2>
-      <button id="close-settings-btn" class="text-gray-400 hover:text-white">&times;</button>
+<div id="settings-modal" class="hidden fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-50 p-4 sm:p-6 lg:p-8">
+  <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full h-full flex flex-col">
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between p-4 border-b border-gray-700 shrink-0">
+      <h2 class="text-lg sm:text-xl font-bold text-white" data-i18n="settingsModalTitle">Налаштування фільтрів</h2>
+      <button id="close-settings-btn" class="text-gray-400 hover:text-white transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
     </div>
-    <div id="rules-container" class="space-y-3">
+    <!-- Modal Content -->
+    <div id="rules-container" class="p-4 sm:p-6 overflow-y-auto">
     </div>
   </div>
 </div>

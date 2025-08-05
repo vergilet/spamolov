@@ -131,6 +131,12 @@ export const elements = {
     }
   },
 
+  enforceMessageLimit(chatElement, maxMessages) {
+    while (chatElement.children.length > maxMessages) {
+      chatElement.removeChild(chatElement.firstChild);
+    }
+  },
+
   saveSettings() {
     localStorage.setItem('twitchFilterSettings', JSON.stringify(this.settings));
   },
@@ -154,29 +160,46 @@ export const elements = {
 
   renderSettingsToggles(spamRuleDefinitions) {
     this.rulesContainer.innerHTML = '';
+    const rulesGrid = document.createElement('div');
+    rulesGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+
     for (const key in spamRuleDefinitions) {
       const rule = spamRuleDefinitions[key];
       const isChecked = this.settings.rules[key] !== false;
 
-      const label = document.createElement('label');
-      label.className = 'flex items-center justify-between cursor-pointer';
-      label.innerHTML = `
-                <span class="text-sm text-gray-300">${rule.label}</span>
-                <div class="relative">
-                    <input type="checkbox" id="toggle-${key}" class="sr-only toggle-checkbox" ${isChecked ? 'checked' : ''}>
-                    <div class="block bg-gray-600 w-10 h-6 rounded-full toggle-label"></div>
-                    <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${isChecked ? 'translate-x-4' : ''}"></div>
-                </div>
-            `;
-      const checkbox = label.querySelector('input');
-      const dot = label.querySelector('.dot');
+      const ruleCard = document.createElement('div');
+      ruleCard.className = 'bg-gray-900/50 p-4 rounded-lg flex flex-col justify-between border border-gray-700';
+
+      const contentDiv = document.createElement('div');
+      contentDiv.innerHTML = `
+            <h3 class="font-semibold text-white">${rule.label}</h3>
+            <p class="text-sm text-gray-400 mt-1">${rule.description || ''}</p>
+        `;
+
+      const toggleLabel = document.createElement('label');
+      toggleLabel.className = 'flex items-center justify-between cursor-pointer mt-4 pt-4 border-t border-gray-700';
+      toggleLabel.innerHTML = `
+            <span class="text-sm font-medium text-gray-300">Увімкнено</span>
+            <div class="relative">
+                <input type="checkbox" id="toggle-${key}" class="sr-only toggle-checkbox" ${isChecked ? 'checked' : ''}>
+                <div class="block bg-gray-600 w-10 h-6 rounded-full toggle-label"></div>
+                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition transform ${isChecked ? 'translate-x-4' : ''}"></div>
+            </div>
+        `;
+
+      const checkbox = toggleLabel.querySelector('input');
+      const dot = toggleLabel.querySelector('.dot');
       checkbox.addEventListener('change', () => {
         this.settings.rules[key] = checkbox.checked;
         dot.classList.toggle('translate-x-4', checkbox.checked);
         this.saveSettings();
       });
-      this.rulesContainer.appendChild(label);
+
+      ruleCard.appendChild(contentDiv);
+      ruleCard.appendChild(toggleLabel);
+      rulesGrid.appendChild(ruleCard);
     }
+    this.rulesContainer.appendChild(rulesGrid);
   },
 
   applySpamVisibility() {
@@ -337,6 +360,10 @@ export function setupEventListeners(connectCallback, disconnectCallback) {
     elements.settings.isSpamVisible = !elements.settings.isSpamVisible;
     elements.saveSettings();
     elements.applySpamVisibility();
+    setTimeout(() => {
+      elements.mainChat.scrollTop = elements.mainChat.scrollHeight;
+      elements.spamChat.scrollTop = elements.spamChat.scrollHeight;
+    }, 0);
   });
 
   elements.fullscreenBtn.addEventListener('click', () => {

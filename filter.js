@@ -1,64 +1,5 @@
 import { get7TVEmoteUrl } from './emotes.js';
 
-/*
-TEST CASES TO COVER:
-
-Repetitive/Gibberish/Laughter:
-- "АХАХАХАХААХАХАХАХАХА"
-- "ЖХІВХЗВАЄЗХЄВАЗХЖВА_ХЩЗВЗХАЄХЗВА"
-- "ахаххахахахаххахаха"
-- "ГИГИГИГИГИГИГИГИГИГИГИ"
-- "ВХАЗВАХЗЗХВАЗХВАЗХВАЗХВАХЗ"
-- "хаххахахахахаххахаххаха"
-- "хапzhaahphzphdaphphhdbzdbєзьзщлхщлхщзх"
-- "АХАХАХХАХАХААЗХХХААХАХАХАХА"
-- "ІВ)_ПЩДДУЦ+_ЩЦП_+ЩП+_Ц№НЩ_+"ЕН№"
-- "))))))"
-- "нііііііііііііііііііііііііііііі"
-- "ахвхвахвах"
-- "пхааххахах"
-- "ахаххаххаха"
-- "хахахахахахахв"
-- "ахахахах"
-- "бляяяяяя"
-- "авхахаххаахахвхахах"
-- "сххахахаха"
-- "єєєє"
-- "єєєєєєєєє"
-- "хаахахахха"
-- "ахаахаахааа"
-- "аххахахахахах"
-- "єсхпхпхп"
-- "аххахахахахахахаха"
-- "хаахахаххахахахаахах"
-
-All Caps:
-- "ДУШИЛКА ПІШЛА"
-- "ВООООУК"
-- "ПРАДА ГУЧІ?"
-- "МАШАВСЕСАМА trembaaSalute"
-
-Bot Messages:
-- "StreamElements: ziuzeus за донати Ви можете змінювати перебіг гри | прайс-лист на САЙТІ - https://mine.thetremba.com"
-
-Emote Only:
-- "rap 󠀀"
-- "rap rap eminemRap"
-- "🥳"
-- "🥳🥳"
-
-Bad Words:
-- "а я не знав шо у марії мат за матом, буду знать, дякую"
-
-Commands:
-- "!айкос"
-- "!рулетка 100"
-
-User Repeat:
-- "Валік, що скажете про солоні огірки з медом?" (from the same user twice in 10s)
-
-*/
-
 let badWordsLookup = {};
 let recentBigMessages = [];
 let recentUserMessages = {};
@@ -78,11 +19,11 @@ export function clearUserRepeatHistory() {
   recentUserMessages = {};
 }
 
-// This rule only highlights words, it doesn't move the message to spam
 const highlightRule = {
   label: "🔥 Чи не на часі?",
+  description: "Підсвічує російські слова та пропонує українські відповідники.",
   test: (message) => {
-    const words = message.toLowerCase().match(/\p{L}+/gu) || []; // Use Unicode property escapes to correctly match words
+    const words = message.toLowerCase().match(/\p{L}+/gu) || [];
     const foundWords = [];
     words.forEach(word => {
       if (badWordsLookup[word]) {
@@ -95,17 +36,43 @@ const highlightRule = {
   }
 };
 
-// These rules will always move a message to the spam chat
 const hardSpamRules = {
+  singleCharMessage: {
+    label: "📏 Фільтрувати повідомлення з одного символу",
+    description: "Блокує повідомлення, що складаються з одного символу (наприклад, '1', '?', 'а'), окрім емодзі.",
+    test: (message) => {
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
+      if (cleanMessage.length === 1) {
+        const isKnownEmote = get7TVEmoteUrl(cleanMessage);
+        const isDisplayableEmoji = /\p{Emoji_Presentation}/u.test(cleanMessage);
+        if (!isKnownEmote && !isDisplayableEmoji) {
+          return { reason: "Один символ" };
+        }
+      }
+      return null;
+    }
+  },
+  giftedSubs: {
+    label: "🎁 Фільтрувати подарункові підписки",
+    description: "Переміщує системні повідомлення про подарункові підписки до спам-чату.",
+    test: (message, tags) => {
+      const msgId = tags['msg-id'];
+      if (msgId === 'subgift' || msgId === 'submysterygift') {
+        return { reason: "Подарунок" };
+      }
+      return null;
+    }
+  },
   userRepeat: {
     label: "👯‍♀️ Фільтрувати повтори від одного юзера",
+    description: "Блокує однакові повідомлення від одного й того ж користувача протягом хвилини.",
     test: (message, tags) => {
-      const USER_REPEAT_TIME_WINDOW_MS = 60000; // 60 seconds
+      const USER_REPEAT_TIME_WINDOW_MS = 60000;
       const userId = tags['user-id'];
       if (!userId) return null;
 
       const now = Date.now();
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
 
       const lastMessage = recentUserMessages[userId];
 
@@ -120,6 +87,7 @@ const hardSpamRules = {
   },
   botMessage: {
     label: "🤖 Фільтрувати ботяру (StreamElements)",
+    description: "Блокує повідомлення від відомих ботів, таких як StreamElements.",
     test: (message, tags) => {
       const displayName = (tags['display-name'] || (tags.prefix ? tags.prefix.split('!')[0] : '')).toLowerCase();
       if (displayName === 'streamelements' || message.toLowerCase().startsWith('streamelements:')) {
@@ -130,6 +98,7 @@ const hardSpamRules = {
   },
   mentions: {
     label: "💬 Діалоги чатерсів @user",
+    description: "Блокує повідомлення, що містять згадки (@user), окрім згадок стрімера або модератора.",
     test: (message, tags, channelName, currentUserName) => {
       const mentionRegex = /@(\w+)/g;
       const mentions = (message.match(mentionRegex) || []).map(m => m.substring(1).toLowerCase());
@@ -145,9 +114,9 @@ const hardSpamRules = {
   },
   foreignLang: {
     label: "🛑 Лише Українська та Англійська мови",
+    description: "Блокує повідомлення, що містять символи, які не належать до українського чи англійського алфавітів.",
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
-      // This regex allows letters, numbers, Cyrillic, common punctuation, symbols, and emoji ranges.
       const FOREIGN_CHARS_REGEX = /[^a-zA-Z\u0400-\u04FFʼ0-9\s\p{P}\p{S}\u2000-\u3300\uFE0F\uD83C-\uDBFF\uDC00-\uDFFF]/u;
       if (FOREIGN_CHARS_REGEX.test(cleanMessage)) {
         return { reason: "Іноземне" };
@@ -157,18 +126,22 @@ const hardSpamRules = {
   },
   russianChars: {
     label: "🧟 Фільтрувати терористичне",
+    description: "Блокує повідомлення, що містять символи російського алфавіту (ы, э, ё, ъ).",
     test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Терористичне" } : null
   },
   commandOnly: {
     label: "📋 Фільтрувати команди (!drops, etc.)",
+    description: "Блокує повідомлення, що починаються з символу '!' і виглядають як команди.",
     test: (message) => /^![a-zA-Z\u0400-\u04FF0-9_]+/.test(message.trim()) ? { reason: "Команда" } : null
   },
   link: {
     label: "🔗 Фільтрувати посилання",
+    description: "Блокує повідомлення, що містять посилання (http, .com, тощо).",
     test: (message) => /(https?:\/\/[^\s]+|\w+\.\w+\/\S+)/i.test(message) ? { reason: "Посилання" } : null
   },
   allCaps: {
     label: "🔠 Фільтрувати КАПС",
+    description: "Блокує повідомлення, написані переважно великими літерами.",
     test: (message) => {
       const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
       const words = cleanMessage.split(' ').filter(w => w.length > 0 && !get7TVEmoteUrl(w));
@@ -193,32 +166,42 @@ const hardSpamRules = {
   },
   repetitiveChars: {
     label: "😂 Фільтрувати сміх та флуд",
+    description: "Блокує повідомлення, що складаються з повторюваних символів або груп символів (наприклад, 'ахахах', 'лоллол').",
     test: (message) => {
-      const cleanMessage = message.replace(/\s/g, '').toLowerCase();
-      const len = cleanMessage.length;
+      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
 
-      if (len < 6) return null;
+      if (cleanMessage.length < 2) {
+        return null;
+      }
 
-      const alphanumericOnly = message.replace(/[^a-zA-Z0-9а-яА-ЯіІїЇєЄґҐ]/g, '');
-      if (/([\p{L}\p{N}])\1{3,}/u.test(alphanumericOnly)) {
+      const uniqueChars = new Set(cleanMessage.split(''));
+      if (uniqueChars.size === 1) {
         return { reason: "Сміття" };
       }
 
-      if (/(.{2,3})\1{2,}/.test(cleanMessage)) {
-        return { reason: "Сміття" };
+      const messageWithoutSpaces = cleanMessage.replace(/\s/g, '').toLowerCase();
+      const len = messageWithoutSpaces.length;
+
+      if (len >= 4) {
+        const alphanumericOnly = message.replace(/[^a-zA-Z0-9а-яА-ЯіІїЇєЄґҐ]/g, '');
+        if (/([\p{L}\p{N}])\1{3,}/u.test(alphanumericOnly)) {
+          return { reason: "Сміття" };
+        }
+
+        if (/(.{2,3})\1{2,}/.test(messageWithoutSpaces)) {
+          return { reason: "Сміття" };
+        }
       }
 
-      // This check is specifically for short, low-variety messages,
-      // and avoids flagging longer, legitimate sentences.
-      if (len < 30) {
-        const uniqueChars = new Set(cleanMessage.split('')).size;
-        if (len >= 7 && uniqueChars <= 2) {
+      if (len >= 7 && len < 30) {
+        const uniqueCharsInLongerMsg = new Set(messageWithoutSpaces.split('')).size;
+        if (uniqueCharsInLongerMsg <= 2) {
           return { reason: "Сміття" };
         }
-        if (len >= 10 && uniqueChars <= 3) {
+        if (len >= 10 && uniqueCharsInLongerMsg <= 3) {
           return { reason: "Сміття" };
         }
-        const ratio = uniqueChars / len;
+        const ratio = uniqueCharsInLongerMsg / len;
         if (len > 12 && ratio < 0.35) {
           return { reason: "Сміття" };
         }
@@ -229,6 +212,7 @@ const hardSpamRules = {
   },
   gibberish: {
     label: "⌨️ Фільтрувати нісенітниці",
+    description: "Блокує беззмістовні набори символів, які не схожі на звичайні слова.",
     test: (message) => {
       const cleanMessage = message.replace(/\s/g, '');
       if (cleanMessage.length < 10) return null;
@@ -253,6 +237,7 @@ const hardSpamRules = {
   },
   emoteOnly: {
     label: "🤣 Фільтрувати лише емодзі",
+    description: "Блокує повідомлення, що складаються виключно з емодзі Twitch, 7TV або стандартних емодзі.",
     test: (message, tags) => {
       const messageWithoutMentions = message.replace(/@(\w+)/g, '');
       const cleanMessage = messageWithoutMentions.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
@@ -273,6 +258,9 @@ const hardSpamRules = {
       const words = cleanMessage.split(' ').filter(w => w.length > 0);
 
       const isOnlyEmoji = (str) => {
+        if (/^\d+$/.test(str)) {
+          return false;
+        }
         const emojiRegex = /^(\p{Emoji_Presentation}|\p{Emoji_Modifier_Base}|\p{Emoji_Component}|\u200d)+$/u;
         return emojiRegex.test(str);
       };
@@ -290,6 +278,7 @@ const hardSpamRules = {
   },
   copypasta: {
     label: "🍝 Лише одна Паста",
+    description: "Блокує довгі повідомлення (копіпасти), які повторюються в чаті протягом хвилини.",
     test: (message) => {
       const COPYPASTA_MIN_LENGTH = 50;
       const COPYPASTA_TIME_WINDOW_MS = 60000;
@@ -312,14 +301,14 @@ const hardSpamRules = {
 export const spamRuleDefinitions = { ...hardSpamRules, notInTime: highlightRule };
 
 export function getSpamResult(message, tags, channelName, currentUserName, settings) {
-  // First, check for hard spam rules
   for (const ruleKey in hardSpamRules) {
     if (settings.rules[ruleKey]) {
       const result = hardSpamRules[ruleKey].test(message, tags, channelName, currentUserName);
-      if (result) return result;
+      if (result) {
+        return result;
+      }
     }
   }
-
   return null;
 }
 
