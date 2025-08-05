@@ -202,7 +202,7 @@ const hardSpamRules = {
       const len = messageWithoutSpaces.length;
 
       if (len >= 4) {
-        const alphanumericOnly = message.replace(/[^a-zA-Z0-9а-яА-ЯіІїЇєЄґҐ]/g, '');
+        const alphanumericOnly = cleanMessage.replace(/[^a-zA-Z0-9а-яА-ЯіІїЇєЄґҐ]/g, '');
         if (/([\p{L}\p{N}])\1{3,}/u.test(alphanumericOnly)) {
           return { reason: "Сміття" };
         }
