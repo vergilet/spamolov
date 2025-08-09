@@ -1,5 +1,14 @@
 import { get7TVEmoteUrl } from './emotes.js';
 
+// Regex constants for clarity and reuse
+const INVISIBLE_CHARS_REGEX = /[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu;
+const EMOJI_PRESENTATION_REGEX = /\p{Emoji_Presentation}/u;
+const RUSSIAN_CHARS_REGEX = /[ыэёъ]/i;
+const COMMAND_REGEX = /^![a-zA-Z\u0400-\u04FF0-9_]+/;
+const LINK_REGEX = /(https?:\/\/[^\s]+|\w+\.\w+\/\S+)/i;
+const REPEATED_4_PLUS_CHARS_REGEX = /([\p{L}\p{N}])\1{3,}/u;
+const REPEATED_2_OR_3_CHAR_GROUP_REGEX = /(.{2,3})\1{2,}/;
+
 let badWordsLookup = {};
 let recentBigMessages = [];
 let recentUserMessages = {};
@@ -13,6 +22,11 @@ export function setupVocabulary() {
     }, {});
   }
   return Object.keys(badWordsLookup).length;
+}
+
+export function clearFilterState() {
+  recentUserMessages = {};
+  recentBigMessages = [];
 }
 
 export function clearUserRepeatHistory() {
@@ -41,10 +55,10 @@ const hardSpamRules = {
     label: "📏 Фільтрувати повідомлення з одного символу",
     description: "Блокує повідомлення, що складаються з одного символу (наприклад, '1', '?', 'а'), окрім емодзі.",
     test: (message) => {
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
+      const cleanMessage = message.replace(INVISIBLE_CHARS_REGEX, '').trim();
       if (cleanMessage.length === 1) {
         const isKnownEmote = get7TVEmoteUrl(cleanMessage);
-        const isDisplayableEmoji = /\p{Emoji_Presentation}/u.test(cleanMessage);
+        const isDisplayableEmoji = EMOJI_PRESENTATION_REGEX.test(cleanMessage);
         if (!isKnownEmote && !isDisplayableEmoji) {
           return { reason: "Один символ" };
         }
@@ -67,12 +81,12 @@ const hardSpamRules = {
     label: "👯‍♀️ Фільтрувати повтори від одного юзера",
     description: "Блокує однакові повідомлення від одного й того ж користувача протягом хвилини.",
     test: (message, tags) => {
-      const USER_REPEAT_TIME_WINDOW_MS = 60000;
+      const USER_REPEAT_TIME_WINDOW_MS = 120000;
       const userId = tags['user-id'];
       if (!userId) return null;
 
       const now = Date.now();
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
+      const cleanMessage = message.replace(INVISIBLE_CHARS_REGEX, '').trim();
 
       const lastMessage = recentUserMessages[userId];
 
@@ -127,23 +141,23 @@ const hardSpamRules = {
   russianChars: {
     label: "🧟 Фільтрувати терористичне",
     description: "Блокує повідомлення, що містять символи російського алфавіту (ы, э, ё, ъ).",
-    test: (message) => /[ыэёъ]/i.test(message) ? { reason: "Терористичне" } : null
+    test: (message) => RUSSIAN_CHARS_REGEX.test(message) ? { reason: "Терористичне" } : null
   },
   commandOnly: {
     label: "📋 Фільтрувати команди (!drops, etc.)",
     description: "Блокує повідомлення, що починаються з символу '!' і виглядають як команди.",
-    test: (message) => /^![a-zA-Z\u0400-\u04FF0-9_]+/.test(message.trim()) ? { reason: "Команда" } : null
+    test: (message) => COMMAND_REGEX.test(message.trim()) ? { reason: "Команда" } : null
   },
   link: {
     label: "🔗 Фільтрувати посилання",
     description: "Блокує повідомлення, що містять посилання (http, .com, тощо).",
-    test: (message) => /(https?:\/\/[^\s]+|\w+\.\w+\/\S+)/i.test(message) ? { reason: "Посилання" } : null
+    test: (message) => LINK_REGEX.test(message) ? { reason: "Посилання" } : null
   },
   allCaps: {
     label: "🔠 Фільтрувати КАПС",
     description: "Блокує повідомлення, написані переважно великими літерами.",
     test: (message) => {
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      const cleanMessage = message.replace(INVISIBLE_CHARS_REGEX, '').trim();
       const words = cleanMessage.split(' ').filter(w => w.length > 0 && !get7TVEmoteUrl(w));
 
       if (words.length === 0) return null;
@@ -187,7 +201,7 @@ const hardSpamRules = {
       });
 
       const messageWithoutEmotes = textOnlyWords.join(' ');
-      const cleanMessage = messageWithoutEmotes.replace(/[\u{E0000}-\u{E007F}\u200B-\u200D\uFEFF]/gu, '').trim();
+      const cleanMessage = messageWithoutEmotes.replace(INVISIBLE_CHARS_REGEX, '').trim();
 
       if (cleanMessage.length < 2) {
         return null;
@@ -203,11 +217,11 @@ const hardSpamRules = {
 
       if (len >= 4) {
         const alphanumericOnly = cleanMessage.replace(/[^a-zA-Z0-9а-яА-ЯіІїЇєЄґҐ]/g, '');
-        if (/([\p{L}\p{N}])\1{3,}/u.test(alphanumericOnly)) {
+        if (REPEATED_4_PLUS_CHARS_REGEX.test(alphanumericOnly)) {
           return { reason: "Сміття" };
         }
 
-        if (/(.{2,3})\1{2,}/.test(messageWithoutSpaces)) {
+        if (REPEATED_2_OR_3_CHAR_GROUP_REGEX.test(messageWithoutSpaces)) {
           return { reason: "Сміття" };
         }
       }
@@ -304,7 +318,7 @@ const hardSpamRules = {
       const now = Date.now();
       recentBigMessages = recentBigMessages.filter(msg => now - msg.timestamp < COPYPASTA_TIME_WINDOW_MS);
 
-      const cleanMessage = message.replace(/[\u{E0000}-\u{E007F}]/gu, '').trim();
+      const cleanMessage = message.replace(INVISIBLE_CHARS_REGEX, '').trim();
 
       if (cleanMessage.length >= COPYPASTA_MIN_LENGTH) {
         if (recentBigMessages.some(msg => msg.text === cleanMessage)) {
