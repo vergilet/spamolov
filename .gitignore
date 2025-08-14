@@ -1,2 +1,5 @@
 .idea/
 .DS_Store
+/.bundle/
+/vendor/bundle/
+/Gemfile.lock

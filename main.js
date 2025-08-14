@@ -1,173 +1,99 @@
 import * as ui from './ui.js';
-import { connectToTwitch, disconnectFromTwitch, handleMessage } from './twitch.js';
-import { getSpamResult, getHighlightDetails, setupVocabulary, spamRuleDefinitions } from './filter.js';
+import { setupVocabulary, spamRuleDefinitions } from './filter.js';
 import { translations } from './i18n.js';
 
-const MAX_MESSAGES_PER_CHAT = 300;
+let socket = null;
 let mainMessageCount = 0;
 let spamMessageCount = 0;
-let activityChecker = null;
-let lastMessageTimestamp = 0;
 
 function updateConnectionStatus(state, message) {
-  clearInterval(activityChecker);
-  ui.elements.statusLight.classList.remove('bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-gray-500');
-
   switch (state) {
     case 'connecting':
-      ui.elements.statusLight.classList.add('bg-yellow-500');
-      ui.elements.statusEl.textContent = translations.statusConnectingText;
       ui.elements.setConnectButtonState('connecting');
       break;
     case 'connected':
-      ui.elements.statusLight.classList.add('bg-green-500');
       ui.elements.setConnectButtonState('connected');
-      lastMessageTimestamp = Date.now();
-      activityChecker = setInterval(() => {
-        const secondsSince = Math.round((Date.now() - lastMessageTimestamp) / 1000);
-        if (secondsSince > 20) {
-          ui.elements.statusLight.classList.remove('bg-green-500');
-          ui.elements.statusLight.classList.add('bg-yellow-500');
-          ui.elements.statusEl.textContent = `${translations.statusStale} (${secondsSince} ${translations.statusSecondsAgo})`;
-        } else {
-          ui.elements.statusLight.classList.remove('bg-yellow-500');
-          ui.elements.statusLight.classList.add('bg-green-500');
-          ui.elements.statusEl.textContent = `${translations.statusConnected}${ui.elements.channelInput.value.trim().toLowerCase()} (${secondsSince} ${translations.statusSecondsAgo})`;
-        }
-      }, 1000);
+      ui.elements.statusEl.textContent = `Connected to server. Waiting for messages on #${ui.elements.channelInput.value}`;
       break;
     case 'error':
-      ui.elements.statusLight.classList.add('bg-red-500');
-      ui.elements.statusEl.textContent = message;
       ui.elements.setConnectButtonState('disconnected');
+      ui.elements.statusEl.textContent = `Error: ${message}`;
       break;
     case 'disconnected':
     default:
-      ui.elements.statusLight.classList.add('bg-gray-500');
-      ui.elements.statusEl.textContent = message || translations.statusDefault;
       ui.elements.setConnectButtonState('disconnected');
+      ui.elements.statusEl.textContent = 'Disconnected from server.';
       break;
   }
-}
-
-
-function onMessage(message) {
-  try {
-    lastMessageTimestamp = Date.now();
-    const parsedMessage = handleMessage(message);
-    if (!parsedMessage) return;
-
-    const channelName = ui.elements.channelInput.value.trim();
-    const currentUserName = ui.elements.currentUserInput.value.trim().toLowerCase();
-
-    if (!parsedMessage.isSystemMessage && currentUserName && parsedMessage.displayName.toLowerCase() === currentUserName) {
-      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, ui.elements.settings);
-      const chatLine = ui.elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
-
-      const chatEl = ui.elements.mainChat;
-      const shouldAutoScroll = chatEl.scrollHeight - chatEl.clientHeight <= chatEl.scrollTop + 150;
-
-      mainMessageCount++;
-      chatEl.appendChild(chatLine);
-
-      if (shouldAutoScroll) {
-        chatEl.scrollTop = chatEl.scrollHeight;
-      }
-
-      ui.elements.enforceMessageLimit(chatEl, MAX_MESSAGES_PER_CHAT);
-      ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
-      return;
-    }
-
-    const spamResult = getSpamResult(parsedMessage.content, parsedMessage.tags, channelName, currentUserName, ui.elements.settings);
-
-    if (spamResult) {
-      const chatEl = ui.elements.spamChat;
-      const shouldAutoScroll = chatEl.scrollHeight - chatEl.clientHeight <= chatEl.scrollTop + 150;
-
-      spamMessageCount++;
-      const chatLine = ui.elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, spamResult, null);
-      chatEl.appendChild(chatLine);
-
-      if (shouldAutoScroll) {
-        chatEl.scrollTop = chatEl.scrollHeight;
-      }
-      ui.elements.enforceMessageLimit(chatEl, MAX_MESSAGES_PER_CHAT);
-
-    } else {
-      const chatEl = ui.elements.mainChat;
-      const shouldAutoScroll = chatEl.scrollHeight - chatEl.clientHeight <= chatEl.scrollTop + 150;
-
-      mainMessageCount++;
-      const highlightDetails = getHighlightDetails(parsedMessage.content, channelName, currentUserName, ui.elements.settings);
-      const chatLine = ui.elements.createChatLine(parsedMessage.badges, parsedMessage.displayName, parsedMessage.content, parsedMessage.color, parsedMessage.tags, null, highlightDetails);
-
-      if (parsedMessage.isSystemMessage) {
-        chatLine.classList.add('system-notification');
-      }
-
-      chatEl.appendChild(chatLine);
-
-      if (shouldAutoScroll) {
-        chatEl.scrollTop = chatEl.scrollHeight;
-      }
-      ui.elements.enforceMessageLimit(chatEl, MAX_MESSAGES_PER_CHAT);
-    }
-    ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
-  } catch (e) {
-    console.error("Failed to process message:", message, e);
-  }
-}
-
-function onConnect() {
-  mainMessageCount = 0;
-  spamMessageCount = 0;
-  ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
-  ui.elements.mainChat.innerHTML = '';
-  ui.elements.spamChat.innerHTML = '';
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   setupVocabulary();
   ui.setupEventListeners(connect, disconnect);
   ui.elements.loadSettings(spamRuleDefinitions);
-
-  let settingsUpdated = false;
-  for (const ruleKey in spamRuleDefinitions) {
-    if (ui.elements.settings.rules[ruleKey] === undefined) {
-      ui.elements.settings.rules[ruleKey] = true;
-      settingsUpdated = true;
-    }
-  }
-
-  if (settingsUpdated) {
-    ui.elements.saveSettings();
-  }
-
   ui.elements.renderSettingsToggles(spamRuleDefinitions);
   ui.elements.applySpamVisibility();
   ui.elements.applyFullscreenMode();
-
-  const params = new URLSearchParams(window.location.search);
-  const channelFromUrl = params.get('channel');
-  const currentUserFromUrl = params.get('username');
-  if (channelFromUrl) {
-    ui.elements.channelInput.value = channelFromUrl;
-    localStorage.setItem('twitchChannel', channelFromUrl);
-  }
-  if (currentUserFromUrl) {
-    ui.elements.currentUserInput.value = currentUserFromUrl;
-    localStorage.setItem('twitchCurrentUser', currentUserFromUrl);
-  }
-  if (ui.elements.channelInput.value) {
-    connect();
-  }
 });
 
 function connect() {
-  connectToTwitch(ui.elements.channelInput.value, onMessage, onConnect, updateConnectionStatus);
+  const channel = ui.elements.channelInput.value.trim();
+  const user = ui.elements.currentUserInput.value.trim();
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = window.location.host;
+  socket = new WebSocket(`${protocol}//${host}/websocket`);
+
+  socket.onopen = () => {
+    updateConnectionStatus('connected');
+    socket.send(JSON.stringify({ action: 'join', channel: channel, user: user }));
+  };
+
+  socket.onmessage = (event) => {
+    const response = JSON.parse(event.data);
+
+    if (response.type === 'error') {
+      updateConnectionStatus('error', response.payload);
+      return;
+    }
+
+    if (response.type === 'message') {
+      const { category, payload } = response;
+      const { spam_reason, highlight_details, ...message } = payload;
+
+      const spamResult = spam_reason ? { reason: spam_reason } : null;
+
+      const chatLine = ui.elements.createChatLine(
+        message.badges,
+        message.displayName,
+        message.content,
+        message.color,
+        message.tags,
+        spamResult,
+        highlight_details
+      );
+
+      if (category === 'spam') {
+        spamMessageCount++;
+        ui.elements.spamChat.appendChild(chatLine);
+        ui.elements.scrollToBottom(ui.elements.spamChat);
+      } else {
+        mainMessageCount++;
+        ui.elements.mainChat.appendChild(chatLine);
+        ui.elements.scrollToBottom(ui.elements.mainChat);
+      }
+      ui.elements.updatePercentageDisplay(mainMessageCount, spamMessageCount);
+    }
+  };
+
+  socket.onclose = () => updateConnectionStatus('disconnected');
+  socket.onerror = (err) => updateConnectionStatus('error', 'WebSocket connection failed.');
 }
 
 function disconnect() {
-  disconnectFromTwitch();
+  if (socket) {
+    socket.close();
+    socket = null;
+    updateConnectionStatus('disconnected');
+  }
 }
